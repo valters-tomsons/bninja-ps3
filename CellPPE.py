@@ -3,7 +3,7 @@ from binaryninja.lowlevelil import LowLevelILFunction
 from capstone import *
 
 class CellPPE(Architecture):
-    name = "CellPPE"
+    name = "CellBE-ppc64"
     address_size = 4
     default_int_size = 4
     instr_alignment = 4

@@ -1,13 +1,12 @@
 from binaryninja import *
-from .CellPPE import CellPPE
 
 class PS3ELF(BinaryView):
     name = "PS3 ELF"
-    long_name = "PlayStation 3 Executable and Linkable Format"
+    long_name = "PlayStation 3 ELF"
 
     def __init__(self, data):
         BinaryView.__init__(self, parent_view = data, file_metadata = data.file)
-        self.platform = Architecture["CellPPE"].standalone_platform
+        self.platform = Architecture["CellBE-ppc64"].standalone_platform
         self.data = data
 
     @classmethod
