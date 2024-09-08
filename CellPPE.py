@@ -1,6 +1,4 @@
 from binaryninja import *
-from binaryninja.lowlevelil import LowLevelILFunction
-from capstone import *
 
 class CellPPE(Architecture):
     name = "CellBE-ppc64"
