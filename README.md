@@ -11,3 +11,10 @@ Note that originally we recommended specifying the contents of this entire file 
 ## License
 
 This plugin is released under an [MIT license](./license).
+
+## Resources
+
+https://www.psdevwiki.com/ps3/SELF_-_SPRX
+http://www.openwatcom.com/ftp/devel/docs/elf-64-gen.pdf
+https://refspecs.linuxfoundation.org/elf/gabi4+/ch4.eheader.html
+https://github.com/RPCS3/rpcs3/
