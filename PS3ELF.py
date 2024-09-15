@@ -33,7 +33,6 @@ class PS3ELF(BinaryView):
     def init(self):
         self.arch = Architecture["ppc64"]
         self.arch.address_size = 4
-        self.arch.address_size = 4
         self.arch.default_int_size = 4
         self.arch.instr_alignment = 4
         self.arch.max_instr_length = 4
@@ -151,19 +150,18 @@ class PS3ELF(BinaryView):
         }
         self.platform = self.arch.standalone_platform
         log.log_info('ppc64-cellbe')
+        log.log_info(self.arch.address_size)
         define_elf_header(self)
 
         base_addr = 0x10000
         self.define_data_var(base_addr, Type.structure(elf64_header), "Elf64_Ehdr")
 
-        # Read ELF header
         e_phoff = struct.unpack(">Q", self.data.read(0x20, 8))[0]
-        e_phentsize = struct.unpack(">H", self.data.read(0x36, 2))[0]
         e_phnum = struct.unpack(">H", self.data.read(0x38, 2))[0]
+        e_phentsize = struct.unpack(">H", self.data.read(0x36, 2))[0]
 
         self.define_data_var(base_addr + e_phoff, Type.array(elf64_phdr, e_phnum), "Elf64_Phdrs")
 
-        # Parse program headers (segments)
         for i in range(e_phnum):
             ph_offset = e_phoff + i * e_phentsize
             p_type = struct.unpack(">I", self.data.read(ph_offset, 4))[0]
@@ -175,10 +173,7 @@ class PS3ELF(BinaryView):
             p_memsz = struct.unpack(">Q", self.data.read(ph_offset + 40, 8))[0]
             p_align = struct.unpack(">Q", self.data.read(ph_offset + 48, 8))[0]
 
-            # Add segment to binary view
-            if p_type == 1:  # PT_LOAD
-                segment_name = "TEXT" if p_flags & 1 else "DATA"
-                self.add_auto_segment(
+            self.add_auto_segment(
                     p_vaddr, 
                     p_memsz,
                     p_offset,
@@ -186,11 +181,4 @@ class PS3ELF(BinaryView):
                     SegmentFlag.SegmentReadable | 
                     SegmentFlag.SegmentExecutable if p_flags & 1 else SegmentFlag.SegmentReadable | SegmentFlag.SegmentWritable
                 )
-                self.add_auto_section(
-                    segment_name,
-                    p_vaddr,
-                    p_memsz,
-                    SectionSemantics.ReadOnlyCodeSectionSemantics if p_flags & 1 else SectionSemantics.ReadWriteDataSectionSemantics
-                )
-
         return True

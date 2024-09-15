@@ -64,3 +64,4 @@ def define_elf_header(bv: BinaryView):
     elf64_phdr.append(Type.int(8, False), "p_filesz")
     elf64_phdr.append(Type.int(8, False), "p_memsz")
     elf64_phdr.append(Type.int(8, False), "p_align")
+    bv.define_type("Elf64_Phdr", "Elf64_Phdr", elf64_phdr)
