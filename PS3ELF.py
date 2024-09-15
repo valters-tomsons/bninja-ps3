@@ -13,9 +13,9 @@ class PS3ELF(BinaryView):
     def is_valid_for_data(cls, data) -> bool:
         header = data.read(0, 64)
         return (
-            header[0:4] == b'\x7fELF'    and # magic (elf)
-            header[7] == 0x66            and # OS (f)
-            header[18:20] == b'\x00\x15'     # e_machine (ppc64)
+            header[0:4] == b'\x7fELF'    and # elf_ident magic
+            header[7] == 0x66            and # OS (CELL_LV2)
+            header[18:20] == b'\x00\x15'     # e_machine (PPC64)
         )
 
     def perform_get_default_endianness(self) -> Endianness:
@@ -151,13 +151,17 @@ class PS3ELF(BinaryView):
         }
         self.platform = self.arch.standalone_platform
         log.log_info('ppc64-cellbe')
-
         define_elf_header(self)
+
+        base_addr = 0x10000
+        self.define_data_var(base_addr, Type.structure(elf64_header), "Elf64_Ehdr")
 
         # Read ELF header
         e_phoff = struct.unpack(">Q", self.data.read(0x20, 8))[0]
         e_phentsize = struct.unpack(">H", self.data.read(0x36, 2))[0]
         e_phnum = struct.unpack(">H", self.data.read(0x38, 2))[0]
+
+        self.define_data_var(base_addr + e_phoff, Type.array(elf64_phdr, e_phnum), "Elf64_Phdrs")
 
         # Parse program headers (segments)
         for i in range(e_phnum):
