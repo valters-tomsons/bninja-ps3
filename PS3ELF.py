@@ -1,5 +1,5 @@
 from binaryninja import *
-from .elf_types import define_elf_types
+from .elf_sce import *
 
 class PS3ELF(BinaryView):
     name = "PS3ELF"
@@ -152,7 +152,7 @@ class PS3ELF(BinaryView):
         self.platform = self.arch.standalone_platform
         log.log_info('ppc64-cellbe')
 
-        define_elf_types(self)
+        define_elf_header(self)
 
         # Read ELF header
         e_phoff = struct.unpack(">Q", self.data.read(0x20, 8))[0]

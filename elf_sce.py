@@ -1,6 +1,6 @@
 from binaryninja import BinaryView, EnumerationBuilder, StructureBuilder, Type
 
-def define_elf_types(bv: BinaryView):
+def define_elf_header(bv: BinaryView):
     elf_encoding = EnumerationBuilder.create()
     elf_encoding.width = 1
     elf_encoding.append("BigEndian", 2)
@@ -51,4 +51,4 @@ def define_elf_types(bv: BinaryView):
     elf64_header.append(Type.int(2, False), "e_shstrndx")
     bv.define_type("Elf64_Ehdr", "Elf64_Ehdr", elf64_header)
 
-    bv.define_data_var(0x10000, Type.structure(elf64_header), "ELF64_Header")
+    bv.define_data_var(0x10000, Type.structure(elf64_header), "Elf64_Ehdr")
