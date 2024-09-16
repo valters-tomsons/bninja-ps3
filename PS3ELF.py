@@ -155,29 +155,29 @@ class PS3ELF(BinaryView):
         e_phentsize = struct.unpack(">H", self.data.read(0x36, 2))[0]
         e_phnum = struct.unpack(">H", self.data.read(0x38, 2))[0]
 
+        # add segments
         for i in range(e_phnum):
             ph_offset = e_phoff + i * e_phentsize
-            p_type = struct.unpack(">I", self.data.read(ph_offset, 4))[0]
             p_flags = struct.unpack(">I", self.data.read(ph_offset + 4, 4))[0]
             p_offset = struct.unpack(">Q", self.data.read(ph_offset + 8, 8))[0]
             p_vaddr = struct.unpack(">Q", self.data.read(ph_offset + 16, 8))[0]
-            p_paddr = struct.unpack(">Q", self.data.read(ph_offset + 24, 8))[0]
             p_filesz = struct.unpack(">Q", self.data.read(ph_offset + 32, 8))[0]
             p_memsz = struct.unpack(">Q", self.data.read(ph_offset + 40, 8))[0]
-            p_align = struct.unpack(">Q", self.data.read(ph_offset + 48, 8))[0]
 
-            if(p_filesz != 0 and p_memsz != 0):
+            if (p_filesz != 0 and p_memsz != 0):
                 flags = get_segment_flags(p_flags)
                 self.add_auto_segment(p_vaddr, p_memsz, p_offset, p_filesz, flags)
             else:
                 log_warn('Skipping empty segment!')
 
+        # define elf header data
         define_elf_types(self)
         base_addr = 0x10000
         self.define_data_var(base_addr, Type.structure(elf64_header), "Elf64_Ehdr")
         self.define_data_var(base_addr + e_phoff, Type.array(elf64_phdr, e_phnum), "Elf64_Phdrs")
         self.define_data_var(e_entry, Type.pointer_of_width(4, Type.function()), "_TOC_start")
 
+        # e_entry points to an address in TOC
         start_addr = struct.unpack(">I", self.data.read(e_entry-base_addr, 4))[0]
         self.define_auto_symbol(Symbol(SymbolType.FunctionSymbol, start_addr, "_start"))
         self.add_function(start_addr)
@@ -187,6 +187,7 @@ class PS3ELF(BinaryView):
 
 def get_segment_flags(p_flags_value):
     flag_mappings = [
+        # PF_*, PF_SPU_*, PF_RSX_*
         (0x1 | 0x00100000 | 0x01000000, SegmentFlag.SegmentExecutable),
         (0x2 | 0x00200000 | 0x02000000, SegmentFlag.SegmentWritable),
         (0x4 | 0x00400000 | 0x04000000, SegmentFlag.SegmentReadable)
