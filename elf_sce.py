@@ -45,7 +45,7 @@ def define_elf_header(bv: BinaryView):
     elf64_header.append(Type.enumeration_type(bv.arch, elf_etype), "e_type")
     elf64_header.append(Type.enumeration_type(bv.arch, elf_emachine), "e_machine")
     elf64_header.append(Type.int(4, False), "e_version")
-    elf64_header.append(Type.pointer_of_width(8, Type.int(4, False)), "e_entry")
+    elf64_header.append(Type.pointer_of_width(8, Type.pointer_of_width(4, Type.function(Type.void()))), "e_entry")
     elf64_header.append(Type.int(8, False), "e_phoff")
     elf64_header.append(Type.int(8, False), "e_shoff")
     elf64_header.append(Type.int(4, False), "e_flags")
