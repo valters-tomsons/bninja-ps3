@@ -153,14 +153,21 @@ class PS3ELF(BinaryView):
         log.log_info(self.arch.address_size)
         define_elf_header(self)
 
+        e_entry = struct.unpack(">Q", self.data.read(0x18, 8))[0]
+        e_phoff = struct.unpack(">Q", self.data.read(0x20, 8))[0]
+        e_phentsize = struct.unpack(">H", self.data.read(0x36, 2))[0]
+        e_phnum = struct.unpack(">H", self.data.read(0x38, 2))[0]
+
         base_addr = 0x10000
         self.define_data_var(base_addr, Type.structure(elf64_header), "Elf64_Ehdr")
-
-        e_phoff = struct.unpack(">Q", self.data.read(0x20, 8))[0]
-        e_phnum = struct.unpack(">H", self.data.read(0x38, 2))[0]
-        e_phentsize = struct.unpack(">H", self.data.read(0x36, 2))[0]
-
         self.define_data_var(base_addr + e_phoff, Type.array(elf64_phdr, e_phnum), "Elf64_Phdrs")
+        self.define_data_var(e_entry, Type.pointer_of_width(4, Type.function()), "_TOC_start")
+
+        start_addr = struct.unpack(">I", self.data.read(e_entry-base_addr, 4))[0]
+        # self.define_auto_symbol_and_var_or_function(binaryninja.Symbol(binaryninja.SymbolType.FunctionSymbol, start_addr, "_start", "_start"), Type.function(Type.void()))
+        self.define_data_var(start_addr, Type.function(), "_start")
+        self.add_function(start_addr, self.platform, True, Type.function(Type.void()))
+        self.add_entry_point(start_addr)
 
         for i in range(e_phnum):
             ph_offset = e_phoff + i * e_phentsize
@@ -173,12 +180,18 @@ class PS3ELF(BinaryView):
             p_memsz = struct.unpack(">Q", self.data.read(ph_offset + 40, 8))[0]
             p_align = struct.unpack(">Q", self.data.read(ph_offset + 48, 8))[0]
 
-            self.add_auto_segment(
-                    p_vaddr, 
-                    p_memsz,
-                    p_offset,
-                    p_filesz,
-                    SegmentFlag.SegmentReadable | 
-                    SegmentFlag.SegmentExecutable if p_flags & 1 else SegmentFlag.SegmentReadable | SegmentFlag.SegmentWritable
-                )
+            if(p_filesz != 0 and p_memsz != 0):
+                flags = get_segment_flags(p_flags)
+                self.add_auto_segment(p_vaddr, p_memsz, p_offset, p_filesz, flags)
+            else:
+                log_warn('Skipping empty segment!')
+
         return True
+
+def get_segment_flags(p_flags_value):
+    flag_mappings = [
+        (0x1 | 0x00100000 | 0x01000000, SegmentFlag.SegmentExecutable),
+        (0x2 | 0x00200000 | 0x02000000, SegmentFlag.SegmentWritable),
+        (0x4 | 0x00400000 | 0x04000000, SegmentFlag.SegmentReadable)
+    ]
+    return sum(flag for mask, flag in flag_mappings if p_flags_value & mask)
