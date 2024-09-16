@@ -6,6 +6,7 @@ elf_etype = EnumerationBuilder.create()
 elf_emachine = EnumerationBuilder.create()
 elf_ptype = EnumerationBuilder.create()
 elf_pflags = EnumerationBuilder.create()
+elf_shtype = EnumerationBuilder.create()
 
 elf_eident = StructureBuilder.create()
 elf64_header = StructureBuilder.create()
@@ -89,3 +90,25 @@ def define_elf_types(bv: BinaryView):
     elf64_phdr.append(Type.int(8, False), "p_memsz")
     elf64_phdr.append(Type.int(8, False), "p_align")
     bv.define_type("Elf64_Phdr", "Elf64_Phdr", elf64_phdr)
+
+    elf_shtype.width = 4
+    elf_shtype.append("SHT_SCE_RELA", 0x60000000)
+    elf_shtype.append("SHT_SCE_NID", 0x61000001)
+    elf_shtype.append("SHT_SCE_IOPMOD", 0x70000080)
+    elf_shtype.append("SHT_SCE_EEMOD", 0x70000090)
+    elf_shtype.append("SHT_SCE_PSPRELA", 0x700000A0)
+    elf_shtype.append("SHT_SCE_PPURELA", 0x700000A4)
+    bv.define_type("sh_type", "sh_type", elf_shtype)
+
+    # Section header
+    elf64_shdr.append(Type.int(4, False), "sh_name")
+    elf64_shdr.append(Type.enumeration_type(bv.arch, elf_shtype), "sh_type")
+    elf64_shdr.append(Type.int(8, False), "sh_flags")
+    elf64_shdr.append(Type.int(8, False), "sh_addr")
+    elf64_shdr.append(Type.int(8, False), "sh_offset")
+    elf64_shdr.append(Type.int(8, False), "sh_size")
+    elf64_shdr.append(Type.int(4, False), "sh_link")
+    elf64_shdr.append(Type.int(4, False), "sh_info")
+    elf64_shdr.append(Type.int(8, False), "sh_align")
+    elf64_shdr.append(Type.int(8, False), "sh_entsize")
+    bv.define_type("Elf64_Shdr", "Elf64_Shdr", elf64_shdr)
