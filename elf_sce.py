@@ -12,7 +12,7 @@ elf64_header = StructureBuilder.create()
 elf64_phdr = StructureBuilder.create()
 elf64_shdr = StructureBuilder.create()
 
-def define_elf_header(bv: BinaryView):
+def define_elf_types(bv: BinaryView):
     elf_encoding.width = 1
     elf_encoding.append("BigEndian", 2)
     bv.define_type("ELF_ENCODING", "ELF_ENCODING", elf_encoding)

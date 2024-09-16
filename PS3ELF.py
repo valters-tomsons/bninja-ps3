@@ -149,25 +149,11 @@ class PS3ELF(BinaryView):
             "cia": RegisterInfo("cia", 8),
         }
         self.platform = self.arch.standalone_platform
-        log.log_info('ppc64-cellbe')
-        log.log_info(self.arch.address_size)
-        define_elf_header(self)
 
         e_entry = struct.unpack(">Q", self.data.read(0x18, 8))[0]
         e_phoff = struct.unpack(">Q", self.data.read(0x20, 8))[0]
         e_phentsize = struct.unpack(">H", self.data.read(0x36, 2))[0]
         e_phnum = struct.unpack(">H", self.data.read(0x38, 2))[0]
-
-        base_addr = 0x10000
-        self.define_data_var(base_addr, Type.structure(elf64_header), "Elf64_Ehdr")
-        self.define_data_var(base_addr + e_phoff, Type.array(elf64_phdr, e_phnum), "Elf64_Phdrs")
-        self.define_data_var(e_entry, Type.pointer_of_width(4, Type.function()), "_TOC_start")
-
-        start_addr = struct.unpack(">I", self.data.read(e_entry-base_addr, 4))[0]
-        # self.define_auto_symbol_and_var_or_function(binaryninja.Symbol(binaryninja.SymbolType.FunctionSymbol, start_addr, "_start", "_start"), Type.function(Type.void()))
-        self.define_data_var(start_addr, Type.function(), "_start")
-        self.add_function(start_addr, self.platform, True, Type.function(Type.void()))
-        self.add_entry_point(start_addr)
 
         for i in range(e_phnum):
             ph_offset = e_phoff + i * e_phentsize
@@ -185,6 +171,17 @@ class PS3ELF(BinaryView):
                 self.add_auto_segment(p_vaddr, p_memsz, p_offset, p_filesz, flags)
             else:
                 log_warn('Skipping empty segment!')
+
+        define_elf_types(self)
+        base_addr = 0x10000
+        self.define_data_var(base_addr, Type.structure(elf64_header), "Elf64_Ehdr")
+        self.define_data_var(base_addr + e_phoff, Type.array(elf64_phdr, e_phnum), "Elf64_Phdrs")
+        self.define_data_var(e_entry, Type.pointer_of_width(4, Type.function()), "_TOC_start")
+
+        start_addr = struct.unpack(">I", self.data.read(e_entry-base_addr, 4))[0]
+        self.define_auto_symbol(Symbol(SymbolType.FunctionSymbol, start_addr, "_start"))
+        self.add_function(start_addr)
+        self.add_entry_point(start_addr)
 
         return True
 
