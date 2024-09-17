@@ -149,8 +149,11 @@ class PS3ELF(BinaryView):
             "vscr": RegisterInfo("vscr", 4),
             "cia": RegisterInfo("cia", 8),
         }
-        self.platform = self.arch.standalone_platform
 
+        self.platform = self.arch.standalone_platform
+        self.create_tag_type(self.name, "🎮")
+
+        # parse file header
         e_entry = struct.unpack(">Q", self.data.read(0x18, 8))[0]
         e_phoff = struct.unpack(">Q", self.data.read(0x20, 8))[0]
         e_phentsize = struct.unpack(">H", self.data.read(0x36, 2))[0]
@@ -171,7 +174,7 @@ class PS3ELF(BinaryView):
             else:
                 log_warn('Skipping empty segment!')
 
-        # define elf header data
+        # define elf data
         define_elf_types(self)
         self.define_data_var(self.base_addr, Type.structure(elf64_header), "Elf64_Ehdr")
         self.define_data_var(self.base_addr + e_phoff, Type.array(elf64_phdr, e_phnum), "Elf64_Phdrs")
@@ -182,6 +185,7 @@ class PS3ELF(BinaryView):
         self.define_auto_symbol(Symbol(SymbolType.FunctionSymbol, start_addr, "_start"))
         self.add_function(start_addr)
         self.add_entry_point(start_addr)
+        self.add_tag(start_addr, self.name, "_start", False)
 
         return True
 
