@@ -4,6 +4,7 @@ from .elf_sce import *
 class PS3ELF(BinaryView):
     name = "PS3ELF"
     long_name = "PlayStation 3 ELF"
+    base_addr = 0x10000
 
     def __init__(self, data):
         BinaryView.__init__(self, parent_view = data, file_metadata = data.file)
@@ -172,13 +173,12 @@ class PS3ELF(BinaryView):
 
         # define elf header data
         define_elf_types(self)
-        base_addr = 0x10000
-        self.define_data_var(base_addr, Type.structure(elf64_header), "Elf64_Ehdr")
-        self.define_data_var(base_addr + e_phoff, Type.array(elf64_phdr, e_phnum), "Elf64_Phdrs")
+        self.define_data_var(self.base_addr, Type.structure(elf64_header), "Elf64_Ehdr")
+        self.define_data_var(self.base_addr + e_phoff, Type.array(elf64_phdr, e_phnum), "Elf64_Phdrs")
         self.define_data_var(e_entry, Type.pointer_of_width(4, Type.function()), "_TOC_start")
 
         # e_entry points to an address in TOC
-        start_addr = struct.unpack(">I", self.data.read(e_entry-base_addr, 4))[0]
+        start_addr = struct.unpack(">I", self.data.read(e_entry-self.base_addr, 4))[0]
         self.define_auto_symbol(Symbol(SymbolType.FunctionSymbol, start_addr, "_start"))
         self.add_function(start_addr)
         self.add_entry_point(start_addr)
