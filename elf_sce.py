@@ -7,6 +7,7 @@ elf_emachine = EnumerationBuilder.create()
 elf_ptype = EnumerationBuilder.create()
 elf_pflags = EnumerationBuilder.create()
 elf_shtype = EnumerationBuilder.create()
+elf_shflags = EnumerationBuilder.create()
 
 elf_eident = StructureBuilder.create()
 elf64_header = StructureBuilder.create()
@@ -14,6 +15,9 @@ elf64_phdr = StructureBuilder.create()
 elf64_shdr = StructureBuilder.create()
 
 def define_elf_types(bv: BinaryView):
+
+    # File header
+
     elf_encoding.width = 1
     elf_encoding.append("BigEndian", 2)
     bv.define_type("ELF_ENCODING", "ELF_ENCODING", elf_encoding)
@@ -31,7 +35,6 @@ def define_elf_types(bv: BinaryView):
     elf_emachine.append("EM_PPC64", 0x15)
     bv.define_type("ELF_EMACHINE", "ELF_EMACHINE", elf_emachine)
 
-    # ELF Identification
     elf_eident.append(Type.array(Type.char(), 4), "magic")
     elf_eident.append(Type.int(1, False), "class")
     elf_eident.append(Type.enumeration_type(bv.arch, elf_encoding), "encoding")
@@ -41,7 +44,6 @@ def define_elf_types(bv: BinaryView):
     elf_eident.append(Type.array(Type.char(), 7), "pad")
     bv.define_type("e_ident", "e_ident", elf_eident)
 
-    # ELF64 file header
     elf64_header.append(Type.structure_type(elf_eident), "e_ident")
     elf64_header.append(Type.enumeration_type(bv.arch, elf_etype), "e_type")
     elf64_header.append(Type.enumeration_type(bv.arch, elf_emachine), "e_machine")
@@ -57,6 +59,8 @@ def define_elf_types(bv: BinaryView):
     elf64_header.append(Type.int(2, False), "e_shnum")
     elf64_header.append(Type.int(2, False), "e_shstrndx")
     bv.define_type("Elf64_Ehdr", "Elf64_Ehdr", elf64_header)
+
+    # Program header
 
     elf_ptype.width = 4
     elf_ptype.append("PT_NULL", 0)
@@ -80,7 +84,6 @@ def define_elf_types(bv: BinaryView):
     elf_pflags.append("PF_RSX_R", 0x04000000)
     bv.define_type("p_flags", "p_flags", elf_pflags)
 
-    # Program header
     elf64_phdr.append(Type.enumeration_type(bv.arch, elf_ptype), "p_type")
     elf64_phdr.append(Type.enumeration_type(bv.arch, elf_pflags), "p_flags")
     elf64_phdr.append(Type.int(8, False), "p_offset")
@@ -91,7 +94,21 @@ def define_elf_types(bv: BinaryView):
     elf64_phdr.append(Type.int(8, False), "p_align")
     bv.define_type("Elf64_Phdr", "Elf64_Phdr", elf64_phdr)
 
+    # Section header
+
     elf_shtype.width = 4
+    elf_shtype.append("SHT_NULL", 0)
+    elf_shtype.append("SHT_PROGBITS", 1)
+    elf_shtype.append("SHT_SYMTAB", 2)
+    elf_shtype.append("SHT_STRTAB", 3)
+    elf_shtype.append("SHT_RELA", 4)
+    elf_shtype.append("SHT_HASH", 5)
+    elf_shtype.append("SHT_DYNAMIC", 6)
+    elf_shtype.append("SHT_NOTE", 7)
+    elf_shtype.append("SHT_NOBITS", 8)
+    elf_shtype.append("SHT_REL", 9)
+    elf_shtype.append("SHT_SHLIB", 10)
+    elf_shtype.append("SHT_DYNSYM", 11)
     elf_shtype.append("SHT_SCE_RELA", 0x60000000)
     elf_shtype.append("SHT_SCE_NID", 0x61000001)
     elf_shtype.append("SHT_SCE_IOPMOD", 0x70000080)
@@ -100,7 +117,12 @@ def define_elf_types(bv: BinaryView):
     elf_shtype.append("SHT_SCE_PPURELA", 0x700000A4)
     bv.define_type("sh_type", "sh_type", elf_shtype)
 
-    # Section header
+    elf_shflags.width = 8
+    elf_shflags.append("SHF_WRITE", 0x1)
+    elf_shflags.append("SHF_ALLOC", 0x2)
+    elf_shflags.append("SHF_EXECINSTR", 0x4)
+    bv.define_type("sh_flags", "sh_flags", elf_shflags)
+
     elf64_shdr.append(Type.int(4, False), "sh_name")
     elf64_shdr.append(Type.enumeration_type(bv.arch, elf_shtype), "sh_type")
     elf64_shdr.append(Type.int(8, False), "sh_flags")
