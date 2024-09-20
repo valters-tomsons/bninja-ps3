@@ -13,3 +13,4 @@ This plugin is released under an [MIT license](./license).
 * https://refspecs.linuxfoundation.org/elf/gabi4+/ch4.eheader.html
 * https://github.com/RPCS3/rpcs3/
 * https://github.com/clienthax/Ps3GhidraScripts
+* https://binary.ninja/2020/01/08/guide-to-architecture-plugins-part1.html
