@@ -204,10 +204,11 @@ class PS3ELF(BinaryView):
             sh_name_offset = shdr["sh_name"].value
 
             sh_name = shstrtab[sh_name_offset:].split(b'\x00', 1)[0].decode('utf-8')
-            if not sh_name:
-                sh_name = f"PROGBITS ({i})"
-            
             sh_type = shdr["sh_type"].value
+            if not sh_name:
+                shtype_name = str(sh_type).removeprefix('<SHT_').split()[0]
+                sh_name = f"{shtype_name} ({i})"
+            
             sh_addr = shdr["sh_addr"].value
             sh_offset = shdr["sh_offset"].value
             sh_size = shdr["sh_size"].value
