@@ -1,20 +1,20 @@
 from binaryninja import BinaryView, EnumerationBuilder, StructureBuilder, Type
 
-elf_encoding = EnumerationBuilder.create()
-elf_os = EnumerationBuilder.create()
-elf_etype = EnumerationBuilder.create()
-elf_emachine = EnumerationBuilder.create()
-elf_ptype = EnumerationBuilder.create()
-elf_pflags = EnumerationBuilder.create()
-elf_shtype = EnumerationBuilder.create()
-elf_shflags = EnumerationBuilder.create()
-
-elf_eident = StructureBuilder.create()
-elf64_header = StructureBuilder.create()
-elf64_phdr = StructureBuilder.create()
-elf64_shdr = StructureBuilder.create()
-
 def define_elf_types(bv: BinaryView):
+
+    elf_encoding = EnumerationBuilder.create()
+    elf_os = EnumerationBuilder.create()
+    elf_etype = EnumerationBuilder.create()
+    elf_emachine = EnumerationBuilder.create()
+    elf_ptype = EnumerationBuilder.create()
+    elf_pflags = EnumerationBuilder.create()
+    elf_shtype = EnumerationBuilder.create()
+    elf_shflags = EnumerationBuilder.create()
+
+    elf_eident = StructureBuilder.create()
+    elf64_header = StructureBuilder.create()
+    elf64_phdr = StructureBuilder.create()
+    elf64_shdr = StructureBuilder.create()
 
     # File header
 

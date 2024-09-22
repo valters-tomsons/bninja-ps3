@@ -1,4 +1,4 @@
 from binaryninja import *
-from .PS3ELF import PS3ELF
+from .PS3View import PS3View
 
-PS3ELF.register()
+PS3View.register()
