@@ -151,36 +151,33 @@ class PS3ELF(BinaryView):
         }
 
         self.platform = self.arch.standalone_platform
-        self.create_tag_type(self.name, "🎮")
 
-        # parse file header
-        e_entry = struct.unpack(">Q", self.data.read(0x18, 8))[0]
-        e_phoff = struct.unpack(">Q", self.data.read(0x20, 8))[0]
-        e_phentsize = struct.unpack(">H", self.data.read(0x36, 2))[0]
-        e_phnum = struct.unpack(">H", self.data.read(0x38, 2))[0]
-
-        # add segments
-        for i in range(e_phnum):
-            ph_offset = e_phoff + i * e_phentsize
-            p_flags = struct.unpack(">I", self.data.read(ph_offset + 4, 4))[0]
-            p_offset = struct.unpack(">Q", self.data.read(ph_offset + 8, 8))[0]
-            p_vaddr = struct.unpack(">Q", self.data.read(ph_offset + 16, 8))[0]
-            p_filesz = struct.unpack(">Q", self.data.read(ph_offset + 32, 8))[0]
-            p_memsz = struct.unpack(">Q", self.data.read(ph_offset + 40, 8))[0]
-
-            if (p_filesz != 0 and p_memsz != 0):
-                flags = get_segment_flags(p_flags)
-                self.add_auto_segment(p_vaddr, p_memsz, p_offset, p_filesz, flags)
-            else:
-                log_warn('Skipping empty segment!')
-
-        # define elf data
         define_elf_types(self)
-        self.define_data_var(self.base_addr, Type.structure(elf64_header), "Elf64_Ehdr")
-        self.define_data_var(self.base_addr + e_phoff, Type.array(elf64_phdr, e_phnum), "Elf64_Phdrs")
-        self.define_data_var(e_entry, Type.pointer_of_width(4, Type.function()), "_TOC_start")
+        self.add_auto_segment(self.base_addr, 0x40, 0x0, 0x40, SegmentFlag.SegmentReadable | SegmentFlag.SegmentContainsData)
+        self.define_data_var(self.base_addr, "Elf64_Ehdr", "_file_header")
+        elf_header = self.get_data_var_at(self.base_addr)
+
+        e_phoff = elf_header["e_phoff"].value
+        e_phentsize = elf_header["e_phentsize"].value
+        e_phnum = elf_header["e_phnum"].value
+        self.add_auto_segment(self.base_addr + e_phoff, e_phentsize * e_phnum, e_phoff, e_phentsize * e_phnum, SegmentFlag.SegmentReadable | SegmentFlag.SegmentContainsData)
+        self.define_data_var(self.base_addr + e_phoff, Type.array(self.get_type_by_id("Elf64_Phdr"), e_phnum), "_program_headers")
+        program_headers = self.get_data_var_at(self.base_addr + e_phoff)
+
+        for i in range(e_phnum):
+            phdr = program_headers[i]
+            p_flags = phdr["p_flags"].value
+            p_offset = phdr["p_offset"].value
+            p_vaddr = phdr["p_vaddr"].value
+            p_filesz = phdr["p_filesz"].value
+            p_memsz = phdr["p_memsz"].value
+
+            flags = get_segment_flags(p_flags)
+            self.add_auto_segment(p_vaddr, p_memsz, p_offset, p_filesz, flags)
 
         # e_entry points to an address in TOC
+        e_entry = elf_header["e_entry"].value
+        self.define_data_var(e_entry, Type.pointer_of_width(4, Type.function()), "_TOC_start")
         start_addr = struct.unpack(">I", self.data.read(e_entry-self.base_addr, 4))[0]
         self.define_auto_symbol(Symbol(SymbolType.FunctionSymbol, start_addr, "_start"))
         self.add_function(start_addr)
@@ -189,11 +186,13 @@ class PS3ELF(BinaryView):
 
         return True
 
-def get_segment_flags(p_flags_value):
+def get_segment_flags(p_flags: int):
+
     flag_mappings = [
         # PF_*, PF_SPU_*, PF_RSX_*
         (0x1 | 0x00100000 | 0x01000000, SegmentFlag.SegmentExecutable),
         (0x2 | 0x00200000 | 0x02000000, SegmentFlag.SegmentWritable),
         (0x4 | 0x00400000 | 0x04000000, SegmentFlag.SegmentReadable)
     ]
-    return sum(flag for mask, flag in flag_mappings if p_flags_value & mask)
+
+    return sum(flag for mask, flag in flag_mappings if int(p_flags) & mask)

@@ -63,6 +63,7 @@ def define_elf_types(bv: BinaryView):
     # Program header
 
     elf_ptype.width = 4
+    elf_ptype.signed = False
     elf_ptype.append("PT_NULL", 0)
     elf_ptype.append("PT_LOAD", 1)
     elf_ptype.append("PT_DYNAMIC", 2)
@@ -73,6 +74,7 @@ def define_elf_types(bv: BinaryView):
     bv.define_type("p_type", "p_type", elf_ptype)
 
     elf_pflags.width = 4
+    elf_pflags.signed = False
     elf_pflags.append("PF_X", 0x1)
     elf_pflags.append("PF_W", 0x2)
     elf_pflags.append("PF_R", 0x4)
@@ -92,6 +94,7 @@ def define_elf_types(bv: BinaryView):
     elf64_phdr.append(Type.int(8, False), "p_filesz")
     elf64_phdr.append(Type.int(8, False), "p_memsz")
     elf64_phdr.append(Type.int(8, False), "p_align")
+    elf64_phdr.packed = True
     bv.define_type("Elf64_Phdr", "Elf64_Phdr", elf64_phdr)
 
     # Section header
