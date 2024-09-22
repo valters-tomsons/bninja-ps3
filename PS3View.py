@@ -124,41 +124,22 @@ def get_segment_flags(p_flags: int):
 
     return sum(flag for mask, flag in flag_mappings if int(p_flags) & mask)
 
-def get_section_semantics(sh_type: int, sh_flags: int):
-    type_mappings = {
+def get_section_semantics(sh_type: int, sh_flags: int) -> SectionSemantics:
+    type_semantics = {
         0: SectionSemantics.DefaultSectionSemantics,  # SHT_NULL
         1: SectionSemantics.ReadOnlyDataSectionSemantics,  # SHT_PROGBITS
-        2: SectionSemantics.ReadOnlyDataSectionSemantics,  # SHT_SYMTAB
-        3: SectionSemantics.ReadOnlyDataSectionSemantics,  # SHT_STRTAB
-        4: SectionSemantics.ReadOnlyDataSectionSemantics,  # SHT_RELA
-        5: SectionSemantics.ReadOnlyDataSectionSemantics,  # SHT_HASH
         6: SectionSemantics.ReadWriteDataSectionSemantics,  # SHT_DYNAMIC
-        7: SectionSemantics.ReadOnlyDataSectionSemantics,  # SHT_NOTE
         8: SectionSemantics.ReadWriteDataSectionSemantics,  # SHT_NOBITS
-        9: SectionSemantics.ReadOnlyDataSectionSemantics,  # SHT_REL
-        10: SectionSemantics.DefaultSectionSemantics,  # SHT_SHLIB
-        11: SectionSemantics.ReadOnlyDataSectionSemantics,  # SHT_DYNSYM
     }
 
-    sce_types = {
-        0x60000000,  # SHT_SCE_RELA
-        0x61000001,  # SHT_SCE_NID
-        0x70000080,  # SHT_SCE_IOPMOD
-        0x70000090,  # SHT_SCE_EEMOD
-        0x700000A0,  # SHT_SCE_PSPRELA
-        0x700000A4,  # SHT_SCE_PPURELA
-    }
+    if sh_type in type_semantics:
+        return type_semantics[sh_type]
 
-    semantics = SectionSemantics.DefaultSectionSemantics
+    if sh_flags & 0x4:  # SHF_EXECINSTR
+        return SectionSemantics.ReadOnlyCodeSectionSemantics
+    elif sh_flags & 0x1:  # SHF_WRITE
+        return SectionSemantics.ReadWriteDataSectionSemantics
+    elif sh_flags & 0x2:  # SHF_ALLOC
+        return SectionSemantics.ReadOnlyDataSectionSemantics
 
-    if sh_type in type_mappings:
-        semantics = type_mappings[sh_type]
-    elif sh_type in sce_types:
-        semantics = SectionSemantics.ReadOnlyDataSectionSemantics
-
-    if sh_flags & 0x1:  # SHF_WRITE
-        semantics = SectionSemantics.ReadWriteDataSectionSemantics
-    elif sh_flags & 0x4:  # SHF_EXECINSTR
-        semantics = SectionSemantics.ReadOnlyCodeSectionSemantics
-
-    return semantics
+    return SectionSemantics.DefaultSectionSemantics
