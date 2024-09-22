@@ -151,11 +151,16 @@ class PS3ELF(BinaryView):
         }
 
         self.platform = self.arch.standalone_platform
+        self.create_tag_type(self.name, "🎮")
+
+        # elf header
 
         define_elf_types(self)
         self.add_auto_segment(self.base_addr, 0x40, 0x0, 0x40, SegmentFlag.SegmentReadable | SegmentFlag.SegmentContainsData)
         self.define_data_var(self.base_addr, "Elf64_Ehdr", "_file_header")
         elf_header = self.get_data_var_at(self.base_addr)
+
+        # elf segments
 
         e_phoff = elf_header["e_phoff"].value
         e_phentsize = elf_header["e_phentsize"].value
@@ -175,6 +180,44 @@ class PS3ELF(BinaryView):
             flags = get_segment_flags(p_flags)
             self.add_auto_segment(p_vaddr, p_memsz, p_offset, p_filesz, flags)
 
+        # elf sections
+
+        e_shoff = elf_header["e_shoff"].value
+        e_shentsize = elf_header["e_shentsize"].value
+        e_shnum = elf_header["e_shnum"].value
+        
+        self.add_auto_segment(self.base_addr + e_shoff, e_shentsize * e_shnum, e_shoff, e_shentsize * e_shnum, SegmentFlag.SegmentReadable | SegmentFlag.SegmentContainsData)
+        self.define_data_var(self.base_addr + e_shoff, Type.array(self.get_type_by_id("Elf64_Shdr"), e_shnum), "_section_headers")
+        self.add_tag(self.base_addr + e_shoff, self.name, "_section_headers", False)
+        section_headers = self.get_data_var_at(self.base_addr + e_shoff)
+
+        # section header string table
+        e_shstrndx = elf_header["e_shstrndx"].value
+        shstrtab_hdr = section_headers[e_shstrndx]
+        shstrtab_offset = shstrtab_hdr["sh_offset"].value
+        shstrtab_size = shstrtab_hdr["sh_size"].value
+        shstrtab = self.data.read(shstrtab_offset, shstrtab_size)
+        self.add_tag(self.base_addr + shstrtab_offset, self.name, "_shdr_string_table")
+
+        for i in range(e_shnum):
+            shdr = section_headers[i]
+            sh_name_offset = shdr["sh_name"].value
+
+            sh_name = shstrtab[sh_name_offset:].split(b'\x00', 1)[0].decode('utf-8')
+            if not sh_name:
+                sh_name = f"PROGBITS ({i})"
+            
+            sh_type = shdr["sh_type"].value
+            sh_addr = shdr["sh_addr"].value
+            sh_offset = shdr["sh_offset"].value
+            sh_size = shdr["sh_size"].value
+            sh_flags = shdr["sh_flags"].value
+
+            flags = get_section_semantics(sh_type, sh_flags)
+
+            addr = sh_addr if sh_addr != 0 else self.base_addr + sh_offset
+            self.add_auto_section(sh_name, addr, sh_size, flags)
+
         # e_entry points to an address in TOC
         e_entry = elf_header["e_entry"].value
         self.define_data_var(e_entry, Type.pointer_of_width(4, Type.function()), "_TOC_start")
@@ -187,7 +230,6 @@ class PS3ELF(BinaryView):
         return True
 
 def get_segment_flags(p_flags: int):
-
     flag_mappings = [
         # PF_*, PF_SPU_*, PF_RSX_*
         (0x1 | 0x00100000 | 0x01000000, SegmentFlag.SegmentExecutable),
@@ -196,3 +238,42 @@ def get_segment_flags(p_flags: int):
     ]
 
     return sum(flag for mask, flag in flag_mappings if int(p_flags) & mask)
+
+def get_section_semantics(sh_type: int, sh_flags: int):
+    type_mappings = {
+        0: SectionSemantics.DefaultSectionSemantics,  # SHT_NULL
+        1: SectionSemantics.ReadOnlyDataSectionSemantics,  # SHT_PROGBITS
+        2: SectionSemantics.ReadOnlyDataSectionSemantics,  # SHT_SYMTAB
+        3: SectionSemantics.ReadOnlyDataSectionSemantics,  # SHT_STRTAB
+        4: SectionSemantics.ReadOnlyDataSectionSemantics,  # SHT_RELA
+        5: SectionSemantics.ReadOnlyDataSectionSemantics,  # SHT_HASH
+        6: SectionSemantics.ReadWriteDataSectionSemantics,  # SHT_DYNAMIC
+        7: SectionSemantics.ReadOnlyDataSectionSemantics,  # SHT_NOTE
+        8: SectionSemantics.ReadWriteDataSectionSemantics,  # SHT_NOBITS
+        9: SectionSemantics.ReadOnlyDataSectionSemantics,  # SHT_REL
+        10: SectionSemantics.DefaultSectionSemantics,  # SHT_SHLIB
+        11: SectionSemantics.ReadOnlyDataSectionSemantics,  # SHT_DYNSYM
+    }
+
+    sce_types = {
+        0x60000000,  # SHT_SCE_RELA
+        0x61000001,  # SHT_SCE_NID
+        0x70000080,  # SHT_SCE_IOPMOD
+        0x70000090,  # SHT_SCE_EEMOD
+        0x700000A0,  # SHT_SCE_PSPRELA
+        0x700000A4,  # SHT_SCE_PPURELA
+    }
+
+    semantics = SectionSemantics.DefaultSectionSemantics
+
+    if sh_type in type_mappings:
+        semantics = type_mappings[sh_type]
+    elif sh_type in sce_types:
+        semantics = SectionSemantics.ReadOnlyDataSectionSemantics
+
+    if sh_flags & 0x1:  # SHF_WRITE
+        semantics = SectionSemantics.ReadWriteDataSectionSemantics
+    elif sh_flags & 0x4:  # SHF_EXECINSTR
+        semantics = SectionSemantics.ReadOnlyCodeSectionSemantics
+
+    return semantics
