@@ -6,6 +6,7 @@ class PS3View(BinaryView):
     name = "PS3ELF"
     long_name = "PlayStation 3 ELF"
     base_addr = 0x10000
+    syscall_addr = 0x08000000
 
     def __init__(self, data):
         BinaryView.__init__(self, parent_view = data, file_metadata = data.file)
@@ -111,6 +112,9 @@ class PS3View(BinaryView):
         self.add_function(start_addr)
         self.add_entry_point(start_addr)
         self.add_tag(start_addr, self.name, "_start", False)
+
+        self.memory_map.add_memory_region("SYSCALLS", self.syscall_addr, bytearray(0x10000))
+        self.define_data_var(self.syscall_addr, "void", "_syscalls")
 
         return True
 
