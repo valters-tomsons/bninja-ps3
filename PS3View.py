@@ -104,15 +104,19 @@ class PS3View(BinaryView):
             addr = sh_addr if sh_addr != 0 else self.base_addr + sh_offset
             self.add_auto_section(sh_name, addr, sh_size, flags)
 
-        # e_entry points to an address in TOC
+        # e_entry points to a function descriptor in TOC
         e_entry = elf_header["e_entry"].value
-        self.define_data_var(e_entry, Type.pointer_of_width(4, Type.function()), "_TOC_start")
-        start_addr = struct.unpack(">I", self.data.read(e_entry-self.base_addr, 4))[0]
+        self.define_data_var(e_entry, self.get_type_by_id("func_desc"), "_TOC_start")
+
+        start_desc = self.get_data_var_at(e_entry)
+        start_addr = start_desc["func_entry"].value
+        log.log_info(f"Start address from TOC descriptor: 0x{start_addr:02X}")
         self.define_auto_symbol(Symbol(SymbolType.FunctionSymbol, start_addr, "_start"))
         self.add_function(start_addr)
         self.add_entry_point(start_addr)
         self.add_tag(start_addr, self.name, "_start", False)
 
+        # Syscall segment
         self.memory_map.add_memory_region("SYSCALLS", self.syscall_addr, bytearray(0x10000))
         self.define_data_var(self.syscall_addr, "void", "_syscalls")
 

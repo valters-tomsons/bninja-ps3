@@ -16,6 +16,11 @@ def define_elf_types(bv: BinaryView):
     elf64_phdr = StructureBuilder.create()
     elf64_shdr = StructureBuilder.create()
 
+    funcdesc_sb = StructureBuilder.create()
+    funcdesc_sb.append(Type.pointer_of_width(4, Type.function()), "func_entry")
+    funcdesc_sb.append(Type.pointer_of_width(4, Type.void()), "toc_base")
+    bv.define_type("func_desc", "func_desc", funcdesc_sb)
+
     # File header
 
     elf_encoding.width = 1
@@ -48,7 +53,7 @@ def define_elf_types(bv: BinaryView):
     elf64_header.append(Type.enumeration_type(bv.arch, elf_etype), "e_type")
     elf64_header.append(Type.enumeration_type(bv.arch, elf_emachine), "e_machine")
     elf64_header.append(Type.int(4, False), "e_version")
-    elf64_header.append(Type.pointer_of_width(8, Type.pointer_of_width(4, Type.function(Type.void()))), "e_entry")
+    elf64_header.append(Type.pointer_of_width(8, bv.get_type_by_id("func_desc")), "e_entry")
     elf64_header.append(Type.int(8, False), "e_phoff")
     elf64_header.append(Type.int(8, False), "e_shoff")
     elf64_header.append(Type.int(4, False), "e_flags")
