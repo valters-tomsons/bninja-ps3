@@ -1,5 +1,5 @@
 from binaryninja import *
-from .ElfSce import define_elf_types
+from .ElfSce import *
 from .CellPPE import create_cellbe_ppc64
 
 class PS3View(BinaryView):
@@ -107,13 +107,10 @@ class PS3View(BinaryView):
         # e_entry points to a function descriptor in opd
         func_desc = self.get_type_by_id("func_desc")
         e_entry = elf_header["e_entry"].value
-
+        self.add_tag(e_entry, self.name, "_toc_.start")
 
         # populate opd segment
         opd_segment = self.get_segment_at(e_entry)
-        if opd_segment == None:
-            log.log_error("Failed to find .opd segment!")
-
         opd_entries = opd_segment.length // 8
         for i in range(opd_entries):
             offset = opd_segment.start + (i * 8)
@@ -137,33 +134,3 @@ class PS3View(BinaryView):
         self.define_data_var(self.syscall_addr, "void", "_syscalls")
 
         return True
-
-def get_segment_flags(p_flags: int):
-    flag_mappings = [
-        # PF_*, PF_SPU_*, PF_RSX_*
-        (0x1 | 0x00100000 | 0x01000000, SegmentFlag.SegmentExecutable),
-        (0x2 | 0x00200000 | 0x02000000, SegmentFlag.SegmentWritable),
-        (0x4 | 0x00400000 | 0x04000000, SegmentFlag.SegmentReadable)
-    ]
-
-    return sum(flag for mask, flag in flag_mappings if int(p_flags) & mask)
-
-def get_section_semantics(sh_type: int, sh_flags: int) -> SectionSemantics:
-    type_semantics = {
-        0: SectionSemantics.DefaultSectionSemantics,  # SHT_NULL
-        1: SectionSemantics.ReadOnlyDataSectionSemantics,  # SHT_PROGBITS
-        6: SectionSemantics.ReadWriteDataSectionSemantics,  # SHT_DYNAMIC
-        8: SectionSemantics.ReadWriteDataSectionSemantics,  # SHT_NOBITS
-    }
-
-    if sh_type in type_semantics:
-        return type_semantics[sh_type]
-
-    if sh_flags & 0x4:  # SHF_EXECINSTR
-        return SectionSemantics.ReadOnlyCodeSectionSemantics
-    elif sh_flags & 0x1:  # SHF_WRITE
-        return SectionSemantics.ReadWriteDataSectionSemantics
-    elif sh_flags & 0x2:  # SHF_ALLOC
-        return SectionSemantics.ReadOnlyDataSectionSemantics
-
-    return SectionSemantics.DefaultSectionSemantics
