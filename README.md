@@ -10,6 +10,7 @@ This plugin is released under an [MIT license](./license).
 
 * https://www.psdevwiki.com/ps3/SELF_-_SPRX
 * http://www.openwatcom.com/ftp/devel/docs/elf-64-gen.pdf
+* https://refspecs.linuxfoundation.org/ELF/ppc64/PPC-elf64abi.html
 * https://refspecs.linuxfoundation.org/elf/gabi4+/ch4.eheader.html
 * https://github.com/RPCS3/rpcs3/
 * https://github.com/clienthax/Ps3GhidraScripts
