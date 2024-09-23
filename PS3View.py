@@ -104,12 +104,28 @@ class PS3View(BinaryView):
             addr = sh_addr if sh_addr != 0 else self.base_addr + sh_offset
             self.add_auto_section(sh_name, addr, sh_size, flags)
 
-        # e_entry points to a function descriptor in TOC
+        # e_entry points to a function descriptor in opd
+        func_desc = self.get_type_by_id("func_desc")
         e_entry = elf_header["e_entry"].value
-        self.define_data_var(e_entry, self.get_type_by_id("func_desc"), "_TOC_start")
 
+
+        # populate opd segment
+        opd_segment = self.get_segment_at(e_entry)
+        if opd_segment == None:
+            log.log_error("Failed to find .opd segment!")
+
+        opd_entries = opd_segment.length // 8
+        for i in range(opd_entries):
+            offset = opd_segment.start + (i * 8)
+            self.define_data_var(offset, func_desc, f"opd_{i}")
+
+        self.define_data_var(e_entry, func_desc, "_TOC_start")
         start_desc = self.get_data_var_at(e_entry)
         start_addr = start_desc["func_entry"].value
+        start_tocbase = start_desc["toc_base"].value 
+        self.define_data_var(start_tocbase, func_desc, "TOC_BASE")
+
+        # define entry point
         log.log_info(f"Start address from TOC descriptor: 0x{start_addr:02X}")
         self.define_auto_symbol(Symbol(SymbolType.FunctionSymbol, start_addr, "_start"))
         self.add_function(start_addr)
