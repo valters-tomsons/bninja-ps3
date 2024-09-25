@@ -23,7 +23,14 @@ def define_elf_types(bv: BinaryView):
 
     elf_etype = EnumerationBuilder.create()
     elf_etype.width = 2
+    elf_etype.append("ET_NONE", 0)
+    elf_etype.append("ET_REL", 1)
     elf_etype.append("ET_EXEC", 2)
+    elf_etype.append("ET_DYN", 3)
+    elf_etype.append("ET_CORE", 4)
+    elf_etype.append("ET_SCE_PRX", 0xffa4)
+    elf_etype.append("ET_SCE_EXEC", 0xfe00)
+    elf_etype.append("ET_SCE_RELEXEC", 0xfe04)
     bv.define_type("ELF_ETYPE", "ELF_ETYPE", elf_etype)
 
     elf_emachine = EnumerationBuilder.create()
@@ -66,6 +73,10 @@ def define_elf_types(bv: BinaryView):
     elf_ptype.append("PT_NULL", 0)
     elf_ptype.append("PT_LOAD", 1)
     elf_ptype.append("PT_DYNAMIC", 2)
+    elf_ptype.append("PT_INTERP", 3)
+    elf_ptype.append("PT_NOTE", 4)
+    elf_ptype.append("PT_SHLIB", 5)
+    elf_ptype.append("PT_PHDR", 6)
     elf_ptype.append("PT_SCE_UNK_70000000", 0x7)
     elf_ptype.append("PT_SCE_RELA", 0x60000000)
     elf_ptype.append("PT_SCE_LICINFO_1", 0x60000001)
