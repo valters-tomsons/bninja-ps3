@@ -120,8 +120,6 @@ class PS3View(BinaryView):
             entry = self.get_data_var_at(offset)
             addr = entry["func_entry"].value
 
-            self.get_data_var_at(offset).name = f"PTR_{addr:02x}"
-
             if(offset == e_entry):
                 entry.name = "PTR_start"
                 entry_toc = entry["toc_base"].value
@@ -129,6 +127,8 @@ class PS3View(BinaryView):
                 self.add_tag(addr, self.name, "_start", False)
                 self.define_auto_symbol(Symbol(SymbolType.FunctionSymbol, addr, f".start"))
                 continue
+
+            self.get_data_var_at(offset).name = f"PTR_{addr:02x}"
 
             sections = self.get_sections_at(addr)
             for section in sections:
