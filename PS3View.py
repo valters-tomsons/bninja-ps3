@@ -104,7 +104,7 @@ class PS3View(BinaryView):
             addr = sh_addr if sh_addr != 0 else self.base_addr + sh_offset
             self.add_auto_section(sh_name, addr, sh_size, flags)
 
-        # e_entry points to a function descriptor in an opd section
+        # e_entry points to a function descriptor in opd segment
         e_entry = elf_header["e_entry"].value
         self.add_tag(e_entry, self.name, "_toc_.start")
 
