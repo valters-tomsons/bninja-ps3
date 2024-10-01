@@ -16,7 +16,8 @@ class PS3View(BinaryView):
     def is_valid_for_data(cls, data) -> bool:
         header = data.read(0, 64)
         return (
-            header[0:4] == b'\x7fELF'    and # elf_ident magic
+            header[0:4] == b'\x7fELF'    and # elf magic
+            header[5] == 0x2             and # big endian
             header[7] == 0x66            and # OS (CELL_LV2)
             header[18:20] == b'\x00\x15'     # e_machine (PPC64)
         )
@@ -136,8 +137,8 @@ class PS3View(BinaryView):
                     self.add_function(addr)
                     break
 
-        # .start TOC base value
-        self.define_data_var(entry_toc, func_desc_t, "TOC_BASE")
+        log.log_info(f"Registering TOC_BASE from entry point: 0x{entry_toc:02X}")
+        self.get_data_var_at(entry_toc).name = "TOC_BASE"
 
         # Syscall segment
         self.memory_map.add_memory_region("SYSCALLS", self.syscall_addr, bytearray(0x10000))
