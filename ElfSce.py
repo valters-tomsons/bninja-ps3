@@ -2,10 +2,10 @@ from binaryninja import BinaryView, EnumerationBuilder, SectionSemantics, Segmen
 
 def define_elf_types(bv: BinaryView):
 
-    funcdesc_sb = StructureBuilder.create()
-    funcdesc_sb.append(Type.pointer_of_width(4, Type.function()), "func_entry")
-    funcdesc_sb.append(Type.pointer_of_width(4, Type.void()), "toc_base")
-    bv.define_type("func_desc", "func_desc", funcdesc_sb)
+    func_descriptor = StructureBuilder.create()
+    func_descriptor.append(Type.pointer_of_width(4, Type.function()), "func_entry")
+    func_descriptor.append(Type.pointer_of_width(4, Type.void()), "toc_base")
+    bv.define_type("func_desc", "func_desc", func_descriptor)
 
     elf_encoding = EnumerationBuilder.create()
     elf_encoding.width = 1
