@@ -2,13 +2,10 @@ from binaryninja import BinaryView, EnumerationBuilder, SectionSemantics, Segmen
 
 def define_elf_types(bv: BinaryView):
 
-    # function descriptor
     funcdesc_sb = StructureBuilder.create()
     funcdesc_sb.append(Type.pointer_of_width(4, Type.function()), "func_entry")
     funcdesc_sb.append(Type.pointer_of_width(4, Type.void()), "toc_base")
     bv.define_type("func_desc", "func_desc", funcdesc_sb)
-
-    # ELF header
 
     elf_encoding = EnumerationBuilder.create()
     elf_encoding.width = 1
@@ -65,8 +62,6 @@ def define_elf_types(bv: BinaryView):
     elf64_header.append(Type.int(2, False), "e_shstrndx")
     bv.define_type("Elf64_Ehdr", "Elf64_Ehdr", elf64_header)
 
-    # Program header
-
     elf_ptype = EnumerationBuilder.create()
     elf_ptype.width = 4
     elf_ptype.signed = False
@@ -108,8 +103,6 @@ def define_elf_types(bv: BinaryView):
     elf64_phdr.append(Type.int(8, False), "p_align")
     elf64_phdr.packed = True
     bv.define_type("Elf64_Phdr", "Elf64_Phdr", elf64_phdr)
-
-    # Section header
 
     elf_shtype = EnumerationBuilder.create()
     elf_shtype.width = 4
