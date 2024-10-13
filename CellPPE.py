@@ -1,15 +1,15 @@
-from binaryninja import Architecture, BinaryView, RegisterInfo
+from binaryninja import ArchitectureHook, RegisterInfo
 
-def create_cellbe_ppc64(bv: BinaryView) -> Architecture:
-    arch = Architecture["ppc64"]
-    arch.address_size = 4
-    arch.default_int_size = 4
-    arch.instr_alignment = 4
-    arch.max_instr_length = 4
-    arch.stack_pointer = "r1"
-    arch.link_reg = "lr"
-    arch.flags = ["cr", "vscr", "fpscr", "xer"]
-    arch.regs = {
+class CellPPE(ArchitectureHook):
+    name = "cellbe-ppc64"
+    address_size = 4
+    default_int_size = 4
+    instr_alignment = 4
+    max_instr_length = 4
+    stack_pointer = "r1"
+    link_reg = "lr"
+    flags = ["cr", "vscr", "fpscr", "xer"]
+    regs = {
         "r0": RegisterInfo("r0", 8),
         "r1": RegisterInfo("r1", 8),
         "r2": RegisterInfo("r2", 8),
@@ -118,4 +118,3 @@ def create_cellbe_ppc64(bv: BinaryView) -> Architecture:
         "vscr": RegisterInfo("vscr", 4),
         "cia": RegisterInfo("cia", 8),
     }
-    return arch

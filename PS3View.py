@@ -1,6 +1,7 @@
 from binaryninja import *
+
+from .CellPPE import CellPPE
 from .ElfSce import *
-from .CellPPE import create_cellbe_ppc64
 
 class PS3View(BinaryView):
     name = "PS3ELF"
@@ -35,7 +36,10 @@ class PS3View(BinaryView):
         return self.arch.address_size
 
     def init(self):
-        self.arch = create_cellbe_ppc64(self)
+        cellbe = CellPPE(Architecture['ppc64'])
+        cellbe.register()
+
+        self.arch = cellbe
         self.platform = self.arch.standalone_platform
         self.create_tag_type(self.name, "🎮")
 
