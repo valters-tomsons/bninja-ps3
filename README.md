@@ -15,3 +15,5 @@ This plugin is released under an [MIT license](./license).
 * https://github.com/clienthax/Ps3GhidraScripts
 * https://github.com/RPCS3/rpcs3/
 * https://binary.ninja/2020/01/08/guide-to-architecture-plugins-part1.html
+* https://gist.github.com/xerpi/4aaf83ca59c33190c960881e3a364627#file-nidreader-py
+* https://www.psdevwiki.com/ps3/PRX#PS3
