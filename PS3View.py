@@ -43,9 +43,11 @@ class PS3View(BinaryView):
         self.platform = self.arch.standalone_platform
         self.create_tag_type(self.name, "🎮")
 
+        define_elf_types(self)
+        define_sce_types(self)
+
         # elf header
 
-        define_elf_types(self)
         self.add_auto_segment(self.base_addr, 0x40, 0x0, 0x40, SegmentFlag.SegmentReadable | SegmentFlag.SegmentContainsData)
         self.define_data_var(self.base_addr, "Elf64_Ehdr", "_file_header")
         elf_header = self.get_data_var_at(self.base_addr)
@@ -69,6 +71,13 @@ class PS3View(BinaryView):
 
             flags = get_segment_flags(p_flags)
             self.add_auto_segment(p_vaddr, p_memsz, p_offset, p_filesz, flags)
+
+            p_type = self.read_int(phdr["p_type"].address, 4, False)
+            if(p_type == 0x60000001): # PT_PROC_PARAM
+                if(p_vaddr > 0):
+                    self.define_data_var(self.base_addr + p_offset, self.get_type_by_id("sys_process_param_t"), "_sys_process_param")
+                else:
+                    log.log_error("PT_PROC_PARAM header doesn't have address!")
 
         # elf sections
 
@@ -109,25 +118,23 @@ class PS3View(BinaryView):
             addr = sh_addr if sh_addr != 0 else self.base_addr + sh_offset
             self.add_auto_section(sh_name, addr, sh_size, flags)
 
-        # e_entry points to a function descriptor in opd segment
+        # e_entry points to a function descriptor in opd section
         e_entry = elf_header["e_entry"].value
         self.add_tag(e_entry, self.name, "_toc_.start")
 
-        # populate opd descriptors
+        opd_section = self.get_sections_at(e_entry)[0]
+        log.log_info(f"e_entry in .opd section at 0x{opd_section.start:02x}!")
+        opd_entry_count = opd_section.length // 8
         func_desc_t = self.get_type_by_id("func_desc")
-        opd_segment = self.get_segment_at(e_entry)
-        self.add_auto_section(".opd", opd_segment.start, opd_segment.length, SectionSemantics.ReadOnlyDataSectionSemantics)
-        opd_entry_count = opd_segment.length // 8
         for i in range(opd_entry_count):
-            offset = opd_segment.start + (i * 8)
+            offset = opd_section.start + (i * 8)
             self.define_data_var(offset, func_desc_t, f"PTR_{i}")
 
             entry = self.get_data_var_at(offset)
             addr = entry["func_entry"].value
-
+            
             if(offset == e_entry):
                 entry.name = "PTR_start"
-                entry_toc = entry["toc_base"].value
                 self.add_entry_point(addr)
                 self.add_tag(addr, self.name, "_start", False)
                 self.define_auto_symbol(Symbol(SymbolType.FunctionSymbol, addr, f".start"))
@@ -135,14 +142,11 @@ class PS3View(BinaryView):
 
             self.get_data_var_at(offset).name = f"PTR_{addr:02x}"
 
-            sections = self.get_sections_at(addr)
-            for section in sections:
+            addr_sections = self.get_sections_at(addr)
+            for section in addr_sections:
                 if(section.semantics == SectionSemantics.ReadOnlyCodeSectionSemantics):
                     self.add_function(addr)
                     break
-
-        log.log_info(f"Registering TOC_BASE from entry point: 0x{entry_toc:02X}")
-        self.get_data_var_at(entry_toc).name = "TOC_BASE"
 
         # Syscall segment
         self.memory_map.add_memory_region("SYSCALLS", self.syscall_addr, bytearray(0x10000))

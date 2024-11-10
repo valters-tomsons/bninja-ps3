@@ -2,11 +2,6 @@ from binaryninja import BinaryView, EnumerationBuilder, SectionSemantics, Segmen
 
 def define_elf_types(bv: BinaryView):
 
-    func_descriptor = StructureBuilder.create()
-    func_descriptor.append(Type.pointer_of_width(4, Type.function()), "func_entry")
-    func_descriptor.append(Type.pointer_of_width(4, Type.void()), "toc_base")
-    bv.define_type("func_desc", "func_desc", func_descriptor)
-
     elf_encoding = EnumerationBuilder.create()
     elf_encoding.width = 1
     elf_encoding.append("BigEndian", 2)
@@ -45,6 +40,11 @@ def define_elf_types(bv: BinaryView):
     elf_eident.append(Type.array(Type.char(), 7), "pad")
     bv.define_type("e_ident", "e_ident", elf_eident)
 
+    func_descriptor = StructureBuilder.create()
+    func_descriptor.append(Type.pointer_of_width(4, Type.function()), "func_entry")
+    func_descriptor.append(Type.pointer_of_width(4, Type.void()), "toc_base")
+    bv.define_type("func_desc", "func_desc", func_descriptor)
+
     elf64_header = StructureBuilder.create()
     elf64_header.append(Type.structure_type(elf_eident), "e_ident")
     elf64_header.append(Type.enumeration_type(bv.arch, elf_etype), "e_type")
@@ -72,10 +72,9 @@ def define_elf_types(bv: BinaryView):
     elf_ptype.append("PT_NOTE", 4)
     elf_ptype.append("PT_SHLIB", 5)
     elf_ptype.append("PT_PHDR", 6)
-    elf_ptype.append("PT_SCE_UNK_70000000", 0x7)
     elf_ptype.append("PT_SCE_RELA", 0x60000000)
-    elf_ptype.append("PT_SCE_LICINFO_1", 0x60000001)
-    elf_ptype.append("PT_SCE_LICINFO_2", 0x60000002)
+    elf_ptype.append("PT_PROC_PARAM", 0x60000001)
+    elf_ptype.append("PT_PROC_PRX", 0x60000002)
     bv.define_type("p_type", "p_type", elf_ptype)
 
     elf_pflags = EnumerationBuilder.create()
@@ -145,6 +144,38 @@ def define_elf_types(bv: BinaryView):
     elf64_shdr.append(Type.int(8, False), "sh_align")
     elf64_shdr.append(Type.int(8, False), "sh_entsize")
     bv.define_type("Elf64_Shdr", "Elf64_Shdr", elf64_shdr)
+
+def define_sce_types(bv: BinaryView):
+
+    sys_process_param = StructureBuilder.create()
+    sys_process_param.append(Type.int(4, False), "size")
+    sys_process_param.append(Type.int(4, False), "magic")
+    sys_process_param.append(Type.int(4, False), "version")
+    sys_process_param.append(Type.int(4, False), "sdk_version")
+    sys_process_param.append(Type.int(4, True), "primary_prio")
+    sys_process_param.append(Type.int(4, False), "primary_stacksize")
+    sys_process_param.append(Type.int(4, False), "malloc_pagesize")
+    sys_process_param.append(Type.int(4, False), "ppc_seg")
+    sys_process_param.append(Type.int(4, False), "crash_dump_param_addr")
+    bv.define_type("sys_process_param_t", "sys_process_param_t", sys_process_param)
+
+
+    common_info = StructureBuilder.create()
+    common_info.append(Type.int(2, False), "module_attribute")
+    common_info.append(Type.array(Type.int(1, False), 2), "module_version")
+    common_info.append(Type.array(Type.char(), 27), "module_name")
+    common_info.append(Type.int(1, False), "infover")
+    bv.define_type("scemoduleinfo_common", "scemoduleinfo_common", common_info)
+
+    module_info_ppu64 = StructureBuilder.create()
+    module_info_ppu64.append(Type.structure_type(common_info), "common")
+    module_info_ppu64.append(Type.int(8, False, "gp_value"))
+    module_info_ppu64.append(Type.int(8, False, "ent_top"))
+    module_info_ppu64.append(Type.int(8, False, "ent_end"))
+    module_info_ppu64.append(Type.int(8, False, "stub_top"))
+    module_info_ppu64.append(Type.int(8, False, "stub_end"))
+    bv.define_type("scemoduleinfo_ppu64", "scemoduleinfo_ppu64", module_info_ppu64)
+
 
 def get_segment_flags(p_flags: int) -> SegmentFlag:
     flag_mappings = [
