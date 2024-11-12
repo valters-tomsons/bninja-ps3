@@ -182,3 +182,4 @@ class PS3View(BinaryView):
         
         scestubppu32_t = self.get_type_by_id("scelibstub_ppu32")
         self.define_data_var(stub_start, Type.array(scestubppu32_t, int(stub_count)), "_prx_import_stubs")
+        self.add_tag(stub_start, self.name, "_prx_import_stubs", False)
