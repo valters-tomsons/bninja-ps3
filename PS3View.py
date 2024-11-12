@@ -52,7 +52,7 @@ class PS3View(BinaryView):
         self.define_data_var(self.base_addr, "Elf64_Ehdr", "_file_header")
         elf_header = self.get_data_var_at(self.base_addr)
 
-        # elf segments
+        # program headers / segments
 
         e_phoff = elf_header["e_phoff"].value
         e_phentsize = elf_header["e_phentsize"].value
@@ -75,9 +75,18 @@ class PS3View(BinaryView):
             p_type = self.read_int(phdr["p_type"].address, 4, False)
             if(p_type == 0x60000001): # PT_PROC_PARAM
                 if(p_vaddr > 0):
-                    self.define_data_var(self.base_addr + p_offset, self.get_type_by_id("sys_process_param_t"), "_sys_process_param")
+                    self.add_tag(p_vaddr, self.name, "_process_param")
+                    self.define_data_var(p_vaddr, self.get_type_by_id("sys_process_param_t"), "_sys_process_param_t")
+                    module_info_addr = p_vaddr
                 else:
                     log.log_error("PT_PROC_PARAM header doesn't have address!")
+            if(p_type == 0x60000002): # PT_PROC_PRX
+                if(p_vaddr > 0):
+                    self.add_tag(p_vaddr, self.name, "_prx_info")
+                    self.define_data_var(p_vaddr, self.get_type_by_id("sys_process_prx_info_t"), "_sys_process_prx_info_t")
+                    prx_info_addr = p_vaddr
+                else:
+                    log.log_error("PT_PROC_PRX header doesn't have address!")
 
         # elf sections
 
@@ -152,4 +161,24 @@ class PS3View(BinaryView):
         self.memory_map.add_memory_region("SYSCALLS", self.syscall_addr, bytearray(0x10000))
         self.define_data_var(self.syscall_addr, "void", "_syscalls")
 
+        self.define_module_imports(module_info_addr)
+        self.define_prx_imports(prx_info_addr)
+
         return True
+
+    def define_module_imports(self: BinaryView, addr):
+        module_info = self.get_data_var_at(addr)
+
+    def define_prx_imports(self: BinaryView, addr):
+        prx_info = self.get_data_var_at(addr)
+        stub_start = prx_info["libstub_start"].value
+        stub_end = prx_info["libstub_end"].value
+        stub_size = stub_end - stub_start
+        stub_count = stub_size / 0x2C
+
+        if(stub_count == 0):
+            log.log_error("no prx imports!")
+            return
+        
+        scestubppu32_t = self.get_type_by_id("scelibstub_ppu32")
+        self.define_data_var(stub_start, Type.array(scestubppu32_t, int(stub_count)), "_prx_import_stubs")

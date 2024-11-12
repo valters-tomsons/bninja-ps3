@@ -159,6 +159,19 @@ def define_sce_types(bv: BinaryView):
     sys_process_param.append(Type.int(4, False), "crash_dump_param_addr")
     bv.define_type("sys_process_param_t", "sys_process_param_t", sys_process_param)
 
+    prx_info = StructureBuilder.create()
+    prx_info.append(Type.int(4, False), "size")
+    prx_info.append(Type.int(4, False), "magic")
+    prx_info.append(Type.int(4, False), "version")
+    prx_info.append(Type.int(4, False), "sdk_version")
+    prx_info.append(Type.int(4, False), "libent_start")
+    prx_info.append(Type.int(4, False), "libent_end")
+    prx_info.append(Type.int(4, False), "libstub_start")
+    prx_info.append(Type.int(4, False), "libstub_end")
+    prx_info.append(Type.int(1, False), "major_version")
+    prx_info.append(Type.int(1, False), "minor_version")
+    prx_info.append(Type.array(Type.int(1, False), 6), "reserved")
+    bv.define_type("sys_process_prx_info_t", "sys_process_prx_info_t", prx_info)
 
     common_info = StructureBuilder.create()
     common_info.append(Type.int(2, False), "module_attribute")
@@ -176,6 +189,27 @@ def define_sce_types(bv: BinaryView):
     module_info_ppu64.append(Type.int(8, False, "stub_end"))
     bv.define_type("scemoduleinfo_ppu64", "scemoduleinfo_ppu64", module_info_ppu64)
 
+    scelibstub_common = StructureBuilder.create()
+    scelibstub_common.append(Type.int(1, False), "structsize")
+    scelibstub_common.append(Type.array(Type.int(1, False), 1), "reserved1")
+    scelibstub_common.append(Type.int(2, False), "version")
+    scelibstub_common.append(Type.int(2, False), "attribute")
+    scelibstub_common.append(Type.int(2, False), "num_func")
+    scelibstub_common.append(Type.int(2, False), "num_var")
+    scelibstub_common.append(Type.int(2, False), "num_tlsvar")
+    scelibstub_common.append(Type.array(Type.int(1, False), 4), "reserved2")
+    bv.define_type("scelibstub_common", "scelibstub_common", scelibstub_common)
+
+    scelibstub_ppu32 = StructureBuilder.create()
+    scelibstub_ppu32.append(Type.structure_type(scelibstub_common), "common")
+    scelibstub_ppu32.append(Type.pointer_of_width(4, Type.char()), "libname")
+    scelibstub_ppu32.append(Type.pointer_of_width(4, Type.void()), "func_nidtable")
+    scelibstub_ppu32.append(Type.pointer_of_width(4, Type.void()), "func_table")
+    scelibstub_ppu32.append(Type.pointer_of_width(4, Type.void()), "var_nidtable")
+    scelibstub_ppu32.append(Type.pointer_of_width(4, Type.void()), "var_table")
+    scelibstub_ppu32.append(Type.pointer_of_width(4, Type.void()), "tls_nidtable")
+    scelibstub_ppu32.append(Type.pointer_of_width(4, Type.void()), "tls_table")
+    bv.define_type("scelibstub_ppu32", "scelibstub_ppu32", scelibstub_ppu32)
 
 def get_segment_flags(p_flags: int) -> SegmentFlag:
     flag_mappings = [
