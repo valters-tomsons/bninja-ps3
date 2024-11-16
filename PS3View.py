@@ -174,12 +174,18 @@ class PS3View(BinaryView):
         stub_start = prx_info["libstub_start"].value
         stub_end = prx_info["libstub_end"].value
         stub_size = stub_end - stub_start
-        stub_count = stub_size / 0x2C
+        stub_count = int(stub_size / 0x2C)
 
         if(stub_count == 0):
             log.log_error("no prx imports!")
             return
         
         scestubppu32_t = self.get_type_by_id("scelibstub_ppu32")
-        self.define_data_var(stub_start, Type.array(scestubppu32_t, int(stub_count)), "_prx_import_stubs")
+        self.define_data_var(stub_start, Type.array(scestubppu32_t, stub_count), "_prx_import_stubs")
         self.add_tag(stub_start, self.name, "_prx_import_stubs", False)
+
+        stubs = self.get_data_var_at(stub_start)
+        log.log_info("PRX imports modules:")
+        for stub in stubs.value:
+            libname = self.get_ascii_string_at(stub["libname"])
+            log.log_info(f"prx imports module: {libname}")
