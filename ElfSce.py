@@ -1,4 +1,4 @@
-from binaryninja import BinaryView, EnumerationBuilder, SectionSemantics, SegmentFlag, StructureBuilder, Type, log
+from binaryninja import BinaryView, EnumerationBuilder, SectionSemantics, SegmentFlag, StructureBuilder, Symbol, SymbolType, Type, log
 import os
 
 def define_elf_types(bv: BinaryView):
@@ -267,3 +267,85 @@ def get_name_for_nid(module_name: str, nid: int) -> str:
         return f"{module_name}_{nid_hex}"
         
     return name
+
+def define_prx_imports(bv: BinaryView, addr):
+        prx_info = bv.get_data_var_at(addr)
+        stub_start = prx_info["libstub_start"].value
+        stub_end = prx_info["libstub_end"].value
+        stub_size = stub_end - stub_start
+        stub_count = int(stub_size / 0x2C)
+
+        if(stub_count == 0):
+            log.log_error("no prx imports!")
+            return
+        
+        scestubppu32_t = bv.get_type_by_id("scelibstub_ppu32")
+        bv.define_data_var(stub_start, Type.array(scestubppu32_t, stub_count), "_prx_import_stubs")
+        bv.add_tag(stub_start, bv.name, "_prx_import_stubs", False)
+
+        stubs = bv.get_data_var_at(stub_start)
+
+        for stub in stubs.value:
+            libname_addr = stub["libname"]
+            if(libname_addr > 0):
+                libname = bv.get_ascii_string_at(stub["libname"])
+            else:
+                libname = ""
+
+            log.log_info(f"prx imports module '{libname}'")
+
+            num_func = stub["common"]["num_func"]
+            log.log_info(f"num_func:{num_func}")
+            if num_func > 0:
+                nid_table = stub["func_nidtable"]
+                addr_table = stub["func_table"]
+
+                for j in range(num_func):
+                    nid = bv.read_int(nid_table + (j * 4), 4)
+                    func_addr = bv.read_int(addr_table + (j * 4), 4)
+                    func_name = get_name_for_nid(libname, nid)
+
+                    bv.define_auto_symbol(Symbol(
+                        SymbolType.ImportedFunctionSymbol,
+                        func_addr,
+                        short_name=func_name,
+                        full_name=f"{libname}:{func_name}",
+                        namespace=libname
+                    ))
+
+            num_var = stub["common"]["num_var"]
+            log.log_info(f"num_var:{num_var}")
+            if num_var > 0:
+                nid_table = stub["var_nidtable"]
+                addr_table = stub["var_table"]
+
+                for j in range(num_var):
+                    nid = bv.read_int(nid_table + (j * 4), 4)
+                    var_addr = bv.read_int(addr_table + (j * 4), 4)
+                    var_name = get_name_for_nid(libname, nid)
+
+                    bv.define_auto_symbol(Symbol(
+                        SymbolType.ImportedDataSymbol,
+                        var_addr,
+                        short_name=var_name,
+                        full_name=f"{libname}:{var_name}",
+                        namespace=libname
+                    ))
+
+            num_tls = stub["common"]["num_tlsvar"]
+            log.log_info(f"num_tls:{num_tls}")
+            if num_tls > 0:
+                nid_table = stub["tls_nidtable"]
+                addr_table = stub["tls_table"]
+            
+                for j in range(num_tls):
+                    nid = bv.read_int(nid_table + (j * 4), 4)
+                    tls_addr = bv.read_int(addr_table + (j * 4), 4)
+                    tls_name = get_name_for_nid(libname, nid)
+
+                    bv.define_auto_symbol(Symbol(
+                        SymbolType.ImportedDataSymbol,
+                        tls_addr,
+                        f"tls_{tls_name}",
+                        namespace=libname
+                    ))
