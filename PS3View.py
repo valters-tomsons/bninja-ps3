@@ -131,6 +131,7 @@ class PS3View(BinaryView):
         e_entry = elf_header["e_entry"].value
         self.add_tag(e_entry, self.name, "_toc_.start")
 
+        # define functions from OPD table
         opd_section = self.get_sections_at(e_entry)[0]
         log.log_info(f"e_entry in .opd section at 0x{opd_section.start:02x}!")
         opd_entry_count = opd_section.length // 8
@@ -157,5 +158,48 @@ class PS3View(BinaryView):
                     self.add_function(addr)
                     break
 
-        define_prx_imports(self, prx_info_addr)
+        # PRX imports
+
+        fnids = load_fnids()
+        prx_info = self.get_data_var_at(prx_info_addr)
+
+        stub_start = prx_info["libstub_start"].value
+        stub_end = prx_info["libstub_end"].value
+        stub_size = stub_end - stub_start
+        stub_count = int(stub_size / 0x2C)
+        log.log_info(f"stub_count: '{stub_count}'")
+
+        if(stub_count > 0):
+            libstubppu32_t = self.get_type_by_id("scelibstub_ppu32")
+            self.define_data_var(stub_start, Type.array(libstubppu32_t, stub_count), "_prx_import_stubs")
+            self.add_tag(stub_start, self.name, "_prx_import_stubs", False)
+
+            stubs = self.get_data_var_at(stub_start)
+            for stub in stubs.value:
+                libname_addr = stub["libname"]
+                if(libname_addr > 0):
+                    libname = self.get_ascii_string_at(stub["libname"])
+                else:
+                    libname = ""
+
+                log.log_info(f"prx imports module '{libname}'")
+
+                num_func = stub["common"]["num_func"]
+                if num_func > 0:
+                    nid_table = stub["func_nidtable"]
+                    addr_table = stub["func_table"]
+
+                    for j in range(num_func):
+                        nid = self.read_int(nid_table + (j * 4), 4)
+                        func_addr = self.read_int(addr_table + (j * 4), 4)
+                        func_name = get_name_for_nid(fnids, libname, nid)
+
+                        self.define_auto_symbol(Symbol(
+                            SymbolType.ImportedFunctionSymbol,
+                            func_addr,
+                            short_name=func_name,
+                            full_name=f"{libname}:{func_name}",
+                            namespace=libname
+                        ))
+
         return True
