@@ -274,13 +274,3 @@ def load_fnids():
             fnids[nid] = name
 
     return fnids
-
-def get_name_for_nid(fnids, module_name: str, nid: int) -> str:
-    nid_hex = f"0x{nid:08X}"
-    name = fnids.get(nid_hex)
-    
-    if name is None:
-        log.log_warn(f"Missing nid: {module_name}:{nid_hex}")
-        return f"{module_name}_{nid_hex}"
-        
-    return name

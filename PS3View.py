@@ -192,7 +192,12 @@ class PS3View(BinaryView):
                     for j in range(num_func):
                         nid = self.read_int(nid_table + (j * 4), 4)
                         func_addr = self.read_int(addr_table + (j * 4), 4)
-                        func_name = get_name_for_nid(fnids, libname, nid)
+
+                        nid_hex = f"0x{nid:08X}"
+                        func_name = fnids.get(nid_hex)
+                        if func_name is None:
+                            log.log_warn(f"Missing nid: {libname}:{nid_hex}")
+                            func_name = f"{libname}_{nid_hex}"
 
                         self.define_auto_symbol(Symbol(
                             SymbolType.ImportedFunctionSymbol,
