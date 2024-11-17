@@ -4,6 +4,8 @@ Work-in-process Cell PPU (*Playstation 3*) ELF loader for Binary Ninja 4.x
 
 Only supports decrypted PS3 executable ELFs (`EBOOT.BIN`). Not compatible with libraries (`.sprx`), system modules, or other ELF types.
 
+Tested with Binary Ninja `4.1.5902-stable`
+
 ## License
 
 This plugin is released under an [MIT license](./license).
