@@ -157,9 +157,5 @@ class PS3View(BinaryView):
                     self.add_function(addr)
                     break
 
-        self.memory_map.add_memory_region("SYSCALLS", self.syscall_addr, bytearray(0x10000))
-        self.define_data_var(self.syscall_addr, "void", "_syscalls")
-
         define_prx_imports(self, prx_info_addr)
-
         return True
