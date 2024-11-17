@@ -242,23 +242,7 @@ def get_section_semantics(sh_type: int, sh_flags: int) -> SectionSemantics:
 
     return SectionSemantics.DefaultSectionSemantics
 
-fnids = None
-def load_nids():
-    global fnids
-    fnids = {}
-
-    plugin_dir = os.path.dirname(os.path.abspath(__file__))
-    path = os.path.join(plugin_dir, 'nids')
-
-    with open(path, 'r') as f:
-        for line in f:
-            nid, name = line.strip().split(' ', 1)
-            fnids[nid] = name
-
-def get_name_for_nid(module_name: str, nid: int) -> str:
-    if fnids is None:
-        load_nids()
-        
+def get_name_for_nid(fnids, module_name: str, nid: int) -> str:
     nid_hex = f"0x{nid:08X}"
     name = fnids.get(nid_hex)
     
@@ -267,6 +251,18 @@ def get_name_for_nid(module_name: str, nid: int) -> str:
         return f"{module_name}_{nid_hex}"
         
     return name
+
+def load_fnids():
+    fnids = {}
+    plugin_dir = os.path.dirname(os.path.abspath(__file__))
+    path = os.path.join(plugin_dir, 'nids')
+
+    with open(path, 'r') as f:
+        for line in f:
+            nid, name = line.strip().split(' ', 1)
+            fnids[nid] = name
+
+    return fnids
 
 def define_prx_imports(bv: BinaryView, addr):
         prx_info = bv.get_data_var_at(addr)
@@ -283,8 +279,9 @@ def define_prx_imports(bv: BinaryView, addr):
         bv.define_data_var(stub_start, Type.array(scestubppu32_t, stub_count), "_prx_import_stubs")
         bv.add_tag(stub_start, bv.name, "_prx_import_stubs", False)
 
-        stubs = bv.get_data_var_at(stub_start)
+        fnids = load_fnids()
 
+        stubs = bv.get_data_var_at(stub_start)
         for stub in stubs.value:
             libname_addr = stub["libname"]
             if(libname_addr > 0):
@@ -303,7 +300,7 @@ def define_prx_imports(bv: BinaryView, addr):
                 for j in range(num_func):
                     nid = bv.read_int(nid_table + (j * 4), 4)
                     func_addr = bv.read_int(addr_table + (j * 4), 4)
-                    func_name = get_name_for_nid(libname, nid)
+                    func_name = get_name_for_nid(fnids, libname, nid)
 
                     bv.define_auto_symbol(Symbol(
                         SymbolType.ImportedFunctionSymbol,
@@ -322,7 +319,7 @@ def define_prx_imports(bv: BinaryView, addr):
                 for j in range(num_var):
                     nid = bv.read_int(nid_table + (j * 4), 4)
                     var_addr = bv.read_int(addr_table + (j * 4), 4)
-                    var_name = get_name_for_nid(libname, nid)
+                    var_name = get_name_for_nid(fnids, libname, nid)
 
                     bv.define_auto_symbol(Symbol(
                         SymbolType.ImportedDataSymbol,
@@ -341,7 +338,7 @@ def define_prx_imports(bv: BinaryView, addr):
                 for j in range(num_tls):
                     nid = bv.read_int(nid_table + (j * 4), 4)
                     tls_addr = bv.read_int(addr_table + (j * 4), 4)
-                    tls_name = get_name_for_nid(libname, nid)
+                    tls_name = get_name_for_nid(fnids, libname, nid)
 
                     bv.define_auto_symbol(Symbol(
                         SymbolType.ImportedDataSymbol,
