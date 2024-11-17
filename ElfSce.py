@@ -1,4 +1,5 @@
-from binaryninja import BinaryView, EnumerationBuilder, SectionSemantics, SegmentFlag, StructureBuilder, Type
+from binaryninja import BinaryView, EnumerationBuilder, SectionSemantics, SegmentFlag, StructureBuilder, Type, log
+import os
 
 def define_elf_types(bv: BinaryView):
 
@@ -240,3 +241,29 @@ def get_section_semantics(sh_type: int, sh_flags: int) -> SectionSemantics:
         return SectionSemantics.ReadOnlyDataSectionSemantics
 
     return SectionSemantics.DefaultSectionSemantics
+
+fnids = None
+def load_nids():
+    global fnids
+    fnids = {}
+
+    plugin_dir = os.path.dirname(os.path.abspath(__file__))
+    path = os.path.join(plugin_dir, 'nids')
+
+    with open(path, 'r') as f:
+        for line in f:
+            nid, name = line.strip().split(' ', 1)
+            fnids[nid] = name
+
+def get_name_for_nid(module_name: str, nid: int) -> str:
+    if fnids is None:
+        load_nids()
+        
+    nid_hex = f"0x{nid:08X}"
+    name = fnids.get(nid_hex)
+    
+    if name is None:
+        log.log_warn(f"Missing nid: {module_name}:{nid_hex}")
+        return f"{module_name}_{nid_hex}"
+        
+    return name

@@ -79,14 +79,14 @@ class PS3View(BinaryView):
                     self.define_data_var(p_vaddr, self.get_type_by_id("sys_process_param_t"), "_sys_process_param_t")
                     module_info_addr = p_vaddr
                 else:
-                    log.log_error("PT_PROC_PARAM header doesn't have address!")
+                    log.log_error("phdr{i}: PT_PROC_PARAM header doesn't have an address!")
             if(p_type == 0x60000002): # PT_PROC_PRX
                 if(p_vaddr > 0):
                     self.add_tag(p_vaddr, self.name, "_prx_info")
                     self.define_data_var(p_vaddr, self.get_type_by_id("sys_process_prx_info_t"), "_sys_process_prx_info_t")
                     prx_info_addr = p_vaddr
                 else:
-                    log.log_error("PT_PROC_PRX header doesn't have address!")
+                    log.log_error(f"phdr{i}: PT_PROC_PRX header doesn't have an address!")
 
         # elf sections
 
@@ -157,17 +157,12 @@ class PS3View(BinaryView):
                     self.add_function(addr)
                     break
 
-        # Syscall segment
         self.memory_map.add_memory_region("SYSCALLS", self.syscall_addr, bytearray(0x10000))
         self.define_data_var(self.syscall_addr, "void", "_syscalls")
 
-        self.define_module_imports(module_info_addr)
         self.define_prx_imports(prx_info_addr)
 
         return True
-
-    def define_module_imports(self: BinaryView, addr):
-        module_info = self.get_data_var_at(addr)
 
     def define_prx_imports(self: BinaryView, addr):
         prx_info = self.get_data_var_at(addr)
@@ -185,7 +180,65 @@ class PS3View(BinaryView):
         self.add_tag(stub_start, self.name, "_prx_import_stubs", False)
 
         stubs = self.get_data_var_at(stub_start)
-        log.log_info("PRX imports modules:")
+
         for stub in stubs.value:
-            libname = self.get_ascii_string_at(stub["libname"])
-            log.log_info(f"prx imports module: {libname}")
+            libname_addr = stub["libname"]
+            if(libname_addr > 0):
+                libname = self.get_ascii_string_at(stub["libname"])
+            else:
+                libname = ""
+
+            log.log_info(f"prx imports module '{libname}'")
+
+            num_func = stub["common"]["num_func"]
+            if num_func > 0:
+                nid_table = stub["func_nidtable"]
+                addr_table = stub["func_table"]
+
+                for j in range(num_func):
+                    nid = self.read_int(nid_table + (j * 4), 4)
+                    func_addr = self.read_int(addr_table + (j * 4), 4)
+                    func_name = get_name_for_nid(libname, nid)
+
+                    self.define_auto_symbol(Symbol(
+                        SymbolType.ImportedFunctionSymbol,
+                        func_addr,
+                        short_name=func_name,
+                        full_name=f"{libname}:{func_name}",
+                        namespace=libname
+                    ))
+
+            num_var = stub["common"]["num_var"]
+            if num_var > 0:
+                nid_table = stub["var_nidtable"]
+                addr_table = stub["var_table"]
+
+                for j in range(num_var):
+                    nid = self.read_int(nid_table + (j * 4), 4)
+                    var_addr = self.read_int(addr_table + (j * 4), 4)
+                    var_name = get_name_for_nid(libname, nid)
+
+                    self.define_auto_symbol(Symbol(
+                        SymbolType.ImportedDataSymbol,
+                        var_addr,
+                        short_name=var_name,
+                        full_name=f"{libname}:{var_name}",
+                        namespace=libname
+                    ))
+
+            num_tls = stub["common"]["num_tlsvar"]
+            if num_tls > 0:
+                nid_table = stub["tls_nidtable"]
+                addr_table = stub["tls_table"]
+            
+                for j in range(num_tls):
+                    nid = self.read_int(nid_table + (j * 4), 4)
+                    tls_addr = self.read_int(addr_table + (j * 4), 4)
+                    tls_name = get_name_for_nid(nid)
+
+                    self.define_auto_symbol(Symbol(
+                        SymbolType.ImportedDataSymbol,
+                        tls_addr,
+                        f"tls_{tls_name}",
+                        namespace=libname
+                    ))
