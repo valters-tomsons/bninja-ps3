@@ -43,6 +43,7 @@ class PS3View(BinaryView):
         self.platform = self.arch.standalone_platform
         self.create_tag_type(self.name, "🎮")
 
+        add_syscall_library(self)
         define_elf_types(self)
         define_sce_types(self)
 

@@ -1,4 +1,4 @@
-from binaryninja import BinaryView, EnumerationBuilder, SectionSemantics, SegmentFlag, StructureBuilder, Symbol, SymbolType, Type, log
+from binaryninja import BinaryView, EnumerationBuilder, SectionSemantics, SegmentFlag, StructureBuilder, Type, TypeBuilder, TypeLibrary
 import os
 
 def define_elf_types(bv: BinaryView):
@@ -232,6 +232,22 @@ def define_sce_types(bv: BinaryView):
     scelibent_ppu32.append(Type.pointer_of_width(4, Type.void()), "nidtable")
     scelibent_ppu32.append(Type.pointer_of_width(4, Type.void()), "addtable")
     bv.define_type("scelibent_ppu32", "scelibent_ppu32", scelibent_ppu32)
+
+def add_syscall_library(bv: BinaryView):
+    lib = TypeLibrary.new(bv.arch, "SYSCALLS")
+    lib.add_platform(bv.arch.standalone_platform)
+
+    plugin_dir = os.path.dirname(os.path.abspath(__file__))
+    path = os.path.join(plugin_dir, 'syscalls')
+
+    with open(path, 'r') as f:
+        for line in f:
+            num, name = line.strip().split(' ', 1)
+            syscall = TypeBuilder.function(Type.void())
+            syscall.system_call_number = int(num)
+            lib.add_named_type(name, syscall)
+    
+    bv.add_type_library(lib)
 
 def get_segment_flags(p_flags: int) -> SegmentFlag:
     flag_mappings = [
