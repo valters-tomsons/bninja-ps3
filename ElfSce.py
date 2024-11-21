@@ -1,4 +1,4 @@
-from binaryninja import BinaryView, EnumerationBuilder, SectionSemantics, SegmentFlag, StructureBuilder, Type, TypeBuilder, TypeLibrary
+from binaryninja import BinaryView, CallingConvention, EnumerationBuilder, SectionSemantics, SegmentFlag, StructureBuilder, Type, TypeBuilder, TypeLibrary
 import os
 
 def define_elf_types(bv: BinaryView):
@@ -233,9 +233,17 @@ def define_sce_types(bv: BinaryView):
     scelibent_ppu32.append(Type.pointer_of_width(4, Type.void()), "addtable")
     bv.define_type("scelibent_ppu32", "scelibent_ppu32", scelibent_ppu32)
 
+class PS3SyscallCallingConvention(CallingConvention):
+    name = "lv2-syscall"
+    implicitly_defined_regs = ['r11']
+    stack_adjusted_on_return = True
+
 def add_syscall_library(bv: BinaryView):
-    lib = TypeLibrary.new(bv.arch, "SYSCALLS")
-    lib.add_platform(bv.arch.standalone_platform)
+    lib = TypeLibrary.new(bv.arch, "LV2_SYSCALLS")
+    lib.add_platform(bv.platform)
+
+    syscall_convention = PS3SyscallCallingConvention(bv.arch, "lv2-syscall")
+    bv.platform.system_call_convention = syscall_convention
 
     plugin_dir = os.path.dirname(os.path.abspath(__file__))
     path = os.path.join(plugin_dir, 'syscalls')
@@ -243,10 +251,10 @@ def add_syscall_library(bv: BinaryView):
     with open(path, 'r') as f:
         for line in f:
             num, name = line.strip().split(' ', 1)
-            syscall = TypeBuilder.function(Type.void())
+            syscall = TypeBuilder.function(Type.void(), calling_convention=syscall_convention)
             syscall.system_call_number = int(num)
             lib.add_named_type(name, syscall)
-    
+
     bv.add_type_library(lib)
 
 def get_segment_flags(p_flags: int) -> SegmentFlag:
