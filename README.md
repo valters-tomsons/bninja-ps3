@@ -8,7 +8,7 @@ Only supports decrypted PS3 executable ELFs (`EBOOT.BIN`). Not compatible with l
 
 Tested with Binary Ninja:
 * `4.1.5902-stable`
-* `4.2.6455-stable.`
+* `4.2.6455-stable`
 
 # Known Issues
 
