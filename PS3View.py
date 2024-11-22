@@ -2,6 +2,7 @@ from binaryninja import *
 
 from .CellPPE import CellPPE
 from .ElfSce import *
+from .Syscalls import *
 
 class PS3View(BinaryView):
     name = "PS3ELF"
@@ -21,6 +22,13 @@ class PS3View(BinaryView):
             header[5] == 0x2             and # big endian
             header[7] == 0x66            and # OS (CELL_LV2)
             header[18:20] == b'\x00\x15'     # e_machine (PPC64)
+        )
+
+    def register_commands(self):
+        PluginCommand.register(
+            'ps3-syscall-sweep',
+            "Scan for LV2 system calls and annotate their names where possible",
+            lambda bv: SyscallAnalysisTask(bv).start()
         )
 
     def perform_get_default_endianness(self) -> Endianness:
@@ -46,6 +54,8 @@ class PS3View(BinaryView):
         add_syscall_library(self)
         define_elf_types(self)
         define_sce_types(self)
+
+        self.register_commands()
 
         # elf header
 
