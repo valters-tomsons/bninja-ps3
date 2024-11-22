@@ -191,8 +191,8 @@ class PS3View(BinaryView):
                     addr_table = stub["func_table"]
 
                     for j in range(num_func):
-                        nid = self.read_int(nid_table + (j * 4), 4)
-                        func_addr = self.read_int(addr_table + (j * 4), 4)
+                        nid = self.read_int(nid_table + (j * 4), 4, False)
+                        func_addr = self.read_int(addr_table + (j * 4), 4, False)
 
                         nid_hex = f"0x{nid:08X}"
                         func_name = fnids.get(nid_hex)
