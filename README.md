@@ -12,8 +12,8 @@ Tested with Binary Ninja:
 
 # Known Issues
 
-* syscalls are not defined
 * DWARF symbols are not recognized
+* syscall numbers are not lifted into platform
 * bninja does not lift many PPC instructions:
 ```
 clrldi
