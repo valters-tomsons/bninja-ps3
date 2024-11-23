@@ -41,8 +41,6 @@ class SyscallAnalysisTask(BackgroundTaskThread):
                             syscall = func.get_reg_value_at(line.address, "r11").value
 
                             if syscall is None or syscall == 0:
-                                # log.log_error(f"failed to find syscall number at 0x{line.address:02x}")
-                                # continue
                                 log.log_warn(f"could not find value of 'r11' at 0x{line.address:02x}, backtracking for an assignment...")
                                 syscall = self.find_r11_value_by_backtrack(func, line.address)
                                 if syscall is None or syscall == 0:
