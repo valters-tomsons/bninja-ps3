@@ -49,9 +49,12 @@ class PS3View(BinaryView):
 
         self.arch = cellbe
         self.platform = self.arch.standalone_platform
+
+        sc_conv = PS3SyscallCallingConvention(self.arch, "lv2-syscall")
+        self.platform.system_call_convention = sc_conv
+
         self.create_tag_type(self.name, "🎮")
 
-        add_syscall_library(self)
         define_elf_types(self)
         define_sce_types(self)
 
