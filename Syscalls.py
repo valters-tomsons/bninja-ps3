@@ -52,13 +52,14 @@ class SyscallAnalysisTask(BackgroundTaskThread):
                             log.log_info(f"{"backtracked" if backtracked else "lifted"} 0x{line.address:02x} sc {syscall} ('{syscall_name}')")
                             
                             self.bv.set_comment_at(line.address, syscall_name)
-                            func.add_user_type_ref(line.address, syscall_name, self.bv.arch)
 
                             if usedSyscalls.get(syscall) is None:
                                 syscall_type = TypeBuilder.function(Type.void(), calling_convention=self.bv.platform.system_call_convention)
                                 syscall_type.system_call_number = syscall
                                 self.bv.define_type(syscall_name, syscall_name, syscall_type)
                                 usedSyscalls[syscall] = True 
+
+                            func.add_user_type_ref(line.address, syscall_name, self.bv.arch)
 
 
         log.log_info(f"{len(usedSyscalls)} unique syscall definitions added!")
