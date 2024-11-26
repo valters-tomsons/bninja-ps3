@@ -4,17 +4,34 @@
 
 Work-in-process Cell PPU (*Playstation 3*) ELF loader for Binary Ninja 4.x
 
-Only supports decrypted PS3 executable ELFs (`EBOOT.BIN`). Not compatible with libraries (`.sprx`), system modules, or other ELF types.
+Only supports decrypted PS3 executable ELFs `EBOOT.BIN`. Not compatible with libraries `.sprx`, system modules, or other ELF types.
 
 Tested with Binary Ninja:
 * `4.1.5902-stable`
 * `4.2.6455-stable`
 
+# Usage
+
+1. Clone this repo to `~/.binaryninja/plugins/`
+1. Open bninja and load a PS3 executable
+1. Select "Playstation 3 ELF" binary view
+
+## Syscalls
+
+To define syscalls:
+
+1. Right-click anywhere 
+1. `Plugins`
+1. `ps3-syscall-sweep`
+
+Syscalls will then appear under `System types`. Code references might be incomplete if run before analysis can finish or where decompilation fails.
+
 # Known Issues
 
 * DWARF symbols are not recognized
-* syscall numbers are not lifted into platform
-* bninja does not lift many PPC instructions:
+* system call definitions don't have arguments
+* bninja does not lift many PPC instructions, breaking decompilation:
+
 ```
 clrldi
 lfs
