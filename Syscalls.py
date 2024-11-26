@@ -10,6 +10,19 @@ class SyscallAnalysisTask(BackgroundTaskThread):
         BackgroundTaskThread.__init__(self, 'Waiting for analysis for finish...', False)
         self.bv = bv
 
+    def load_syscall_mappings(self) -> dict:
+        plugin_dir = os.path.dirname(os.path.abspath(__file__))
+        path = os.path.join(plugin_dir, 'syscalls')
+
+        syscalls = {}
+    
+        with open(path, 'r') as f:
+            for line in f:
+                num, name = line.strip().split(' ', 1)
+                syscalls[int(num)] = name
+
+        return syscalls
+
     def run(self):
         log.log_info("Loading syscall definitions...")
         syscalls = self.load_syscall_mappings()
@@ -46,6 +59,14 @@ class SyscallAnalysisTask(BackgroundTaskThread):
                             func.add_user_type_ref(line.address, syscall_name, self.bv.arch)
 
         log.log_info(f"{len(usedSyscalls)} unique syscall definitions added!")
+
+    def get_syscall_name_by_num(self, syscalls: dict, number: int) -> str:
+        if syscalls[number] is None:
+            log.log_warn(f"unknown LV2 syscall number: {number}")
+            return f"_syscall_{number}"
+        return syscalls[number]
+
+    # used in cases when bninja can't find value of r11    
     def find_r11_value_by_backtrack(self, func: Function, target_address):
         current_block = None
 
