@@ -1,4 +1,4 @@
-from binaryninja import BinaryView, CallingConvention, EnumerationBuilder, SectionSemantics, SegmentFlag, StructureBuilder, Type, TypeBuilder, TypeLibrary
+from binaryninja import BinaryView, EnumerationBuilder, SectionSemantics, SegmentFlag, StructureBuilder, Type
 import os
 
 def define_elf_types(bv: BinaryView):
