@@ -34,7 +34,7 @@ class SyscallAnalysisTask(BackgroundTaskThread):
                 for line in il.disassembly_text:
                     for token in line.tokens:
                         if token.type == InstructionTextTokenType.InstructionToken and token.text.strip() == 'sc':
-                            syscall = func.get_reg_value_at(line.address, "r11").value
+                            syscall = func.get_reg_value_at(line.address, "r11").value & 0xFFFFFFFF
                             backtracked = False
 
                             if syscall is None or syscall == 0:
@@ -101,7 +101,8 @@ class SyscallAnalysisTask(BackgroundTaskThread):
 
                 value = tokens[2]
                 try:
-                    return int(value, 0) if value.startswith('0x') else int(value)
+                    parsed_value = int(value, 0) if value.startswith('0x') else int(value)
+                    return parsed_value & 0xFFFFFFFF
                 except ValueError:
                     continue
         
