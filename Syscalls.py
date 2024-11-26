@@ -49,7 +49,7 @@ class SyscallAnalysisTask(BackgroundTaskThread):
                                 log.log_warn(f"Unknown system call number: {syscall}")
                                 syscall_name = f'_syscall_{syscall}'
 
-                            log.log_info(f"{"backtracked" if backtracked else "lifted"} 0x{line.address:02x} sc {syscall} ('{syscall_name}')")
+                            log.log_debug(f"{"backtracked" if backtracked else "lifted"} 0x{line.address:02x} sc {syscall} ('{syscall_name}')")
                             
                             self.bv.set_comment_at(line.address, syscall_name)
 
