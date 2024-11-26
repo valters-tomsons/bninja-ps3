@@ -11,36 +11,41 @@ class SyscallAnalysisTask(BackgroundTaskThread):
         self.bv = bv
 
     def run(self):
-        lib = self.bv.get_type_library("LV2_SYSCALLS")
-        log.log_info("Looking for syscalls...")
+        log.log_info("Loading syscall definitions...")
+        syscalls = self.load_syscall_mappings()
 
+        log.log_info("Looking for system calls...")
+        usedSyscalls = {}
         for func in self.bv.functions:
             for il in func.basic_blocks:
                 for line in il.disassembly_text:
                     for token in line.tokens:
                         if token.type == InstructionTextTokenType.InstructionToken and token.text.strip() == 'sc':
                             syscall = func.get_reg_value_at(line.address, "r11").value
+                            backtracked = False
 
                             if syscall is None or syscall == 0:
-                                log.log_warn(f"could not find value of 'r11' at 0x{line.address:02x}, backtracking for an assignment...")
+                                backtracked = True
                                 syscall = self.find_r11_value_by_backtrack(func, line.address)
                                 if syscall is None or syscall == 0:
                                     log.log_error(f"failed to find syscall number for 0x{line.address:02x}")
                                     continue
 
-                            syscall_name = self.get_syscall_name_by_num(lib, syscall)
-                            log.log_info(f"0x{line.address:02x} sc {syscall} ('{syscall_name}')")
+                            syscall_name = syscalls.get(syscall)
+                            if syscall_name is None:
+                                syscall_name = f'_syscall_{syscall}'
+                            log.log_info(f"{"backtracked" if backtracked else "lifted"} 0x{line.address:02x} sc {syscall} ('{syscall_name}')")
                             self.bv.set_comment_at(line.address, syscall_name)
 
-        log.log_info("Finished looking for syscalls!")
+                            if usedSyscalls.get(syscall) is None:
+                                syscall_type = TypeBuilder.function(Type.void(), calling_convention=self.bv.platform.system_call_convention)
+                                syscall_type.system_call_number = syscall
+                                self.bv.define_type(syscall_name, syscall_name, syscall_type)
+                                usedSyscalls[syscall] = True 
 
-    def get_syscall_name_by_num(self, lib: TypeLibrary, num: int) -> str:
-        for name, type in lib.named_types.items():
-            if type.system_call_number == num:
-                return name.__str__()
-        log.log_warn(f"called unknown LV2 syscall number: {num}")
-        return f"_syscall_{num}"
+                            func.add_user_type_ref(line.address, syscall_name, self.bv.arch)
 
+        log.log_info(f"{len(usedSyscalls)} unique syscall definitions added!")
     def find_r11_value_by_backtrack(self, func: Function, target_address):
         current_block = None
 
