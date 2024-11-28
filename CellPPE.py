@@ -1,4 +1,4 @@
-from binaryninja import ArchitectureHook, RegisterInfo
+from binaryninja import ArchitectureHook, LowLevelILFunction, RegisterInfo
 
 class CellPPE(ArchitectureHook):
     name = "cellbe-ppc64"
@@ -118,3 +118,18 @@ class CellPPE(ArchitectureHook):
         "vscr": RegisterInfo("vscr", 4),
         "cia": RegisterInfo("cia", 8),
     }
+
+    def get_instruction_low_level_il(self, data: bytes, addr: int, il: LowLevelILFunction) -> int | None:
+
+        text, length = self.get_instruction_text(data, addr)
+        if(length == 0 or len(text) == 0):
+            return super(CellPPE, self).get_instruction_low_level_il(data, addr, il)
+
+        # opcode = text[0].text
+        # match opcode:
+        #     case 'lfs':  # Load Floating-Point Single
+        #     case 'stfs':  # Store Floating-Point Single
+        #     case 'clrldi':  # Clear Left Double Word Immediate
+        #     case 'cmpdi':  # Compare Double Word Immediate
+
+        return super(CellPPE, self).get_instruction_low_level_il(data, addr, il)
