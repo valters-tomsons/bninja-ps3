@@ -2,7 +2,7 @@
   "pluginmetadataversion": 2,
   "name": "binja-ps3",
   "projectUrl": "https://github.com/valters-tomsons/bninja-ps3",
-  "author": "Valters Tomsons",
+  "author": "faith",
   "version": "v0.0.5",
   "type": [
     "binaryview"
