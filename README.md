@@ -27,9 +27,13 @@ Syscalls will then appear under `System types`. Code references might be incompl
 # Known Issues
 
 * DWARF symbols are not recognized
+* library import definitions don't have arguments
 * system call definitions don't have arguments
-* bninja does not lift many PPC instructions, breaking decompilation:
+* system calls are not registered with platform/system and thus are not lifted
+* not tested on ELFs with multiple TOCs
+* bninja does not lift many PPC instructions, breaking decompilation
 
+Non-exhaustive list of unsupported instructions:
 ```
 clrldi
 lfs
