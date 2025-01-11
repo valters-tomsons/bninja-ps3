@@ -53,6 +53,8 @@ stfd
 vmaddfp
 psq_lx
 stvx
+lwarx
+stwcx
 ```
 
 ## License
