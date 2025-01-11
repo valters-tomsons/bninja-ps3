@@ -10,9 +10,13 @@ Tested with Binary Ninja:
 
 # Usage
 
-1. Clone this repo to `~/.binaryninja/plugins/`
-1. Open bninja and load a PS3 executable
-1. Select "Playstation 3 ELF" binary view
+## Plugin Manager
+
+1. Open binary ninja, Plugins -> Manage Plugins
+1. Search for `ps3`
+1. Install the `binja-ps3` plugin
+1. Load a decrypted PS3 executable
+1. Select `Playstation 3 ELF` binary view
 
 ## Syscalls
 
