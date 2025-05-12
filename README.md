@@ -7,6 +7,7 @@ Work-in-process Cell PPU (*Playstation 3*) ELF loader for Binary Ninja `4.x`. On
 Tested with Binary Ninja:
 * `4.1.5902-stable`
 * `4.2.6455-stable`
+* `5.0.7290-stable`
 
 # Usage
 
