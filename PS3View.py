@@ -143,19 +143,25 @@ class PS3View(BinaryView):
 
         # e_entry points to a function descriptor in opd section
         e_entry = elf_header["e_entry"].value
-        self.add_tag(e_entry, self.name, "_toc_.start")
 
         # define functions from OPD table
         opd_section = self.get_sections_at(e_entry)[0]
         log.log_info(f"e_entry in .opd section at 0x{opd_section.start:02x}!")
         opd_entry_count = opd_section.length // 8
         func_desc_t = self.get_type_by_id("func_desc")
+
+        toc_bases = set()
+
         for i in range(opd_entry_count):
             offset = opd_section.start + (i * 8)
             self.define_data_var(offset, func_desc_t, f"PTR_{i}")
 
             entry = self.get_data_var_at(offset)
             addr = entry["func_entry"].value
+            toc_base = entry["toc_base"].value
+
+            if toc_base > 0:
+                toc_bases.add(toc_base)
             
             if(offset == e_entry):
                 entry.name = "PTR_start"
@@ -171,6 +177,11 @@ class PS3View(BinaryView):
                 if(section.semantics == SectionSemantics.ReadOnlyCodeSectionSemantics):
                     self.add_function(addr)
                     break
+
+        for toc_base in toc_bases:
+            log.log_info(f"toc_base found: 0x{toc_base:02x}")
+            self.add_tag(toc_base-0x8000, self.name, f".toc_start_0x{toc_base:02x}")
+            self.define_data_var(toc_base - 0x8000, Type.void(), f".toc_{toc_base:x}")
 
         # PRX imports
 
