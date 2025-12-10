@@ -93,7 +93,7 @@ class PS3View(BinaryView):
                     self.define_data_var(p_vaddr, self.get_type_by_id("sys_process_param_t"), "_sys_process_param_t")
                     module_info_addr = p_vaddr
                 else:
-                    log.log_error("phdr{i}: PT_PROC_PARAM header doesn't have an address!")
+                    log.log_error(f"phdr{i}: PT_PROC_PARAM header doesn't have an address!")
             if(p_type == 0x60000002): # PT_PROC_PRX
                 if(p_vaddr > 0):
                     self.add_tag(p_vaddr, self.name, "_prx_info")
