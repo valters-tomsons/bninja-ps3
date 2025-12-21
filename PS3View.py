@@ -178,11 +178,6 @@ class PS3View(BinaryView):
                     self.add_function(addr)
                     break
 
-        for toc_base in toc_bases:
-            log.log_info(f"toc_base found: 0x{toc_base:02x}")
-            self.add_tag(toc_base-0x8000, self.name, f".toc_start_0x{toc_base:02x}")
-            self.define_data_var(toc_base - 0x8000, Type.void(), f".toc_{toc_base:x}")
-
         # PRX imports
 
         fnids = load_fnids()
@@ -232,4 +227,5 @@ class PS3View(BinaryView):
                             namespace=libname
                         ))
 
+        log.log_info(f"{len(toc_bases)} toc_base(s) found!")
         return True
