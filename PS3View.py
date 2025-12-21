@@ -121,6 +121,9 @@ class PS3View(BinaryView):
         shstrtab = self.data.read(shstrtab_offset, shstrtab_size)
         self.add_tag(self.base_addr + shstrtab_offset, self.name, "_shdr_string_table")
 
+        # e_entry points to a function descriptor in opd section
+        e_entry = elf_header["e_entry"].value
+
         for i in range(e_shnum):
             shdr = section_headers[i]
             sh_name_offset = shdr["sh_name"].value
@@ -139,13 +142,14 @@ class PS3View(BinaryView):
             flags = get_section_semantics(sh_type, sh_flags)
 
             addr = sh_addr if sh_addr != 0 else self.base_addr + sh_offset
-            self.add_auto_section(sh_name, addr, sh_size, flags)
 
-        # e_entry points to a function descriptor in opd section
-        e_entry = elf_header["e_entry"].value
+            if(addr < e_entry < addr + sh_size):
+                self.add_auto_section(".opd", addr, sh_size, flags)
+            else:
+                self.add_auto_section(sh_name, addr, sh_size, flags)
 
         # define functions from OPD table
-        opd_section = self.get_sections_at(e_entry)[0]
+        opd_section = self.get_section_by_name(".opd")
         log.log_info(f"e_entry in .opd section at 0x{opd_section.start:02x}!")
         opd_entry_count = opd_section.length // 8
         func_desc_t = self.get_type_by_id("func_desc")
