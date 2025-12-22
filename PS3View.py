@@ -3,6 +3,7 @@ from binaryninja import *
 from .CellPPE import CellPPE
 from .ElfSce import *
 from .Syscalls import *
+from .AssertToc import *
 
 class PS3View(BinaryView):
     name = "PS3ELF"
@@ -29,6 +30,12 @@ class PS3View(BinaryView):
             'ps3-syscall-sweep',
             "Scan for LV2 system calls and annotate their names where possible",
             lambda bv: SyscallAnalysisTask(bv).start()
+        )
+
+        PluginCommand.register(
+            'ps3-assert-toc',
+            "Set r2 to appropriate TOC_BASE values",
+            lambda bv: AssertTocTask(bv).start()
         )
 
     def perform_get_default_endianness(self) -> Endianness:
@@ -150,7 +157,6 @@ class PS3View(BinaryView):
 
         # define functions from OPD table
         opd_section = self.get_section_by_name(".opd")
-        log.log_info(f"e_entry in .opd section at 0x{opd_section.start:02x}!")
         opd_entry_count = opd_section.length // 8
         func_desc_t = self.get_type_by_id("func_desc")
 
