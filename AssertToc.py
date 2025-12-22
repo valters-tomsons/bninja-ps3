@@ -6,7 +6,7 @@ class AssertTocTask(BackgroundTaskThread):
         self.bv = bv
 
     def run(self):
-        log.log_info("Iterating OPD...")
+        log.log_info("Iterating .opd")
 
         opd_section = self.bv.get_section_by_name(".opd")
         opd_entry_count = opd_section.length // 8
@@ -17,10 +17,22 @@ class AssertTocTask(BackgroundTaskThread):
             addr = entry["func_entry"].value
 
             func = self.bv.get_function_at(addr)
-            if(func.mlil_if_available and len(func.type.parameters) > 0 and func.type.parameters_with_all_locations[0].location.name == "r2"):
+            if(not func.mlil_if_available):
+                continue
+
+            found = False
+
+            if(len(func.type.parameters) > 0 and func.type.parameters_with_all_locations[0].location.name == "r2"):
                 for il in func.mlil:
-                    for instr in il:
-                        for var in instr.vars_read:
+                    if found: break
+                    for il in il:
+                        if found: break
+                        for var in il.vars_read:
+                            if found: break
                             if var.name == "arg1":
-                                toc_base = PossibleValueSet.constant_ptr(entry["toc_base"].value)
-                                func.set_user_var_value(var, instr.address, toc_base)
+                                toc_base = PossibleValueSet.constant(entry["toc_base"].value)
+                                func.set_user_var_value(var, il.address, toc_base, after=False)
+                                found = True
+                                break
+                continue
+    log.log_info("Finished iterating .opd")
