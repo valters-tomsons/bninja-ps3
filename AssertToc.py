@@ -30,7 +30,7 @@ class AssertTocTask(BackgroundTaskThread):
                         for var in il.vars_read:
                             if found: break
                             if var.name == "arg1":
-                                toc_base = PossibleValueSet.constant(entry["toc_base"].value)
+                                toc_base = PossibleValueSet.constant_ptr(entry["toc_base"].value)
                                 func.set_user_var_value(var, il.address, toc_base, after=False)
                                 found = True
                                 break
