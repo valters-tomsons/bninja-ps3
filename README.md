@@ -1,37 +1,79 @@
-# binja-ps3 (vv0.0.8)
-Author: **faith**
+![](image.png)
 
-_Playstation 3 ELF loader_
+# bninja-ps3
 
-## Description:
+Work-in-process Cell PPU (*Playstation 3*) ELF loader for Binary Ninja `4.x`. Only supports decrypted PS3 executable ELFs `EBOOT.BIN`.
 
+Tested with Binary Ninja:
+* `4.1.5902-stable`
+* `4.2.6455-stable`
+* `5.0.7290-stable`
 
+# Usage
 
+## Plugin Manager
 
-## Installation Instructions
+1. Open binary ninja, Plugins -> Manage Plugins
+1. Search for `ps3`
+1. Install the `binja-ps3` plugin
+1. Load a decrypted PS3 executable
+1. Select `Playstation 3 ELF` binary view
 
-### Darwin
+## Syscalls
 
+To define syscalls:
 
+1. Right-click anywhere 
+1. `Plugins`
+1. `ps3-syscall-sweep`
 
-### Windows
+Syscalls will then appear under `System types`. Code references might be incomplete if run before analysis can finish or where decompilation fails.
 
+# Known Issues
 
+* DWARF symbols are not recognized
+* library import definitions don't have arguments
+* system call definitions don't have arguments
+* system calls are not registered with platform/system and thus are not lifted
+* not tested on ELFs with multiple TOCs
+* bninja does not lift many PPC instructions, breaking decompilation
 
-### Linux
-
-
-
-## Minimum Version
-
-This plugin requires the following minimum version of Binary Ninja:
-
-* 4000
-
+Non-exhaustive list of unsupported instructions:
+```
+clrldi
+lfs
+fcmpu
+stfs
+lfd
+fmuls
+fadds
+fmadds
+fdivs
+mtocrf
+frsp
+fcfid
+cmpdi
+fmr
+stfd
+vmaddfp
+psq_lx
+stvx
+lwarx
+stwcx
+```
 
 ## License
 
-This plugin is released under a MIT license.
-## Metadata Version
+This plugin is released under an [MIT license](./license).
 
-2
+## Resources
+
+* https://www.psdevwiki.com/ps3/SELF_-_SPRX
+* http://www.openwatcom.com/ftp/devel/docs/elf-64-gen.pdf
+* https://refspecs.linuxfoundation.org/ELF/ppc64/PPC-elf64abi.html
+* https://refspecs.linuxfoundation.org/elf/gabi4+/ch4.eheader.html
+* https://github.com/clienthax/Ps3GhidraScripts
+* https://github.com/RPCS3/rpcs3/
+* https://binary.ninja/2020/01/08/guide-to-architecture-plugins-part1.html
+* https://gist.github.com/xerpi/4aaf83ca59c33190c960881e3a364627#file-nidreader-py
+* https://www.psdevwiki.com/ps3/PRX#PS3
