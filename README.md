@@ -1,4 +1,4 @@
-# binja-ps3 (vv0.0.7)
+# binja-ps3 (vv0.0.8)
 Author: **faith**
 
 _Playstation 3 ELF loader_
