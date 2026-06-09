@@ -219,6 +219,8 @@ class PS3View(BinaryView):
                     nid_table = stub["func_nidtable"]
                     addr_table = stub["func_table"]
 
+                    self.define_data_var(addr_table, Type.array(Type.pointer_of_width(4, Type.function()), num_func), f"{libname}_func_tbl")
+
                     for j in range(num_func):
                         nid = self.read_int(nid_table + (j * 4), 4, False)
                         func_addr = self.read_int(addr_table + (j * 4), 4, False)
