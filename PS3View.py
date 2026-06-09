@@ -216,27 +216,28 @@ class PS3View(BinaryView):
 
                 num_func = stub["common"]["num_func"]
                 if num_func > 0:
-                    nid_table = stub["func_nidtable"]
-                    addr_table = stub["func_table"]
+                    nids_table_addr = stub["func_nidtable"]
+                    func_table_addr = stub["func_table"]
 
-                    self.define_data_var(nid_table, Type.array(Type.int(4, sign=False), num_func), f"{libname}_nids_tbl")
-                    self.define_data_var(addr_table, Type.array(Type.pointer_of_width(4, Type.function()), num_func), f"{libname}_func_tbl")
+                    self.define_data_var(nids_table_addr, Type.array(Type.int(4, sign=False), num_func), f"{libname}_nids_tbl")
+                    self.define_data_var(func_table_addr, Type.array(Type.pointer_of_width(4, Type.function()), num_func), f"{libname}_func_tbl")
+
+                    nids_table = self.get_data_var_at(nids_table_addr);
+                    func_table = self.get_data_var_at(func_table_addr) 
 
                     for j in range(num_func):
-                        nid = self.read_int(nid_table + (j * 4), 4, False)
-                        func_addr = self.read_int(addr_table + (j * 4), 4, False)
-
-                        nid_hex = f"0x{nid:08X}"
+                        nid_hex = f"0x{nids_table[j].value:08X}"
                         func_name = fnids.get(nid_hex)
+
                         if func_name is None:
                             log.log_warn(f"Missing nid: {libname}:{nid_hex}")
                             func_name = f"{libname}_{nid_hex}"
                         else:
-                            self.set_comment_at(nid_table + (j * 4), func_name)
+                            self.set_comment_at(nids_table_addr + (j * 4), func_name)
 
                         self.define_auto_symbol(Symbol(
                             SymbolType.ImportedFunctionSymbol,
-                            func_addr,
+                            func_table[j].value,
                             short_name=func_name,
                             full_name=f"{libname}:{func_name}",
                             namespace=libname
