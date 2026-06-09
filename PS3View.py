@@ -1,6 +1,6 @@
 from binaryninja import *
 
-from .CellPPE import CellPPE
+from .CellPPE import CellPPE, PpcSceCallingConvention
 from .ElfSce import *
 from .Syscalls import *
 from .AssertToc import *
@@ -59,6 +59,9 @@ class PS3View(BinaryView):
 
         sc_conv = PS3SyscallCallingConvention(self.arch, "lv2-syscall")
         self.platform.system_call_convention = sc_conv
+
+        sce_conv = PpcSceCallingConvention(self.arch, "ppc-sce")
+        self.platform.default_calling_convention = sce_conv
 
         self.create_tag_type(self.name, "🎮")
 

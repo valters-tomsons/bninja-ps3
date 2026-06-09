@@ -1,4 +1,4 @@
-from binaryninja import ArchitectureHook, LowLevelILFunction, RegisterInfo
+from binaryninja import ArchitectureHook, CallingConvention, LowLevelILFunction, RegisterInfo
 
 class CellPPE(ArchitectureHook):
     name = "cellbe-ppc64"
@@ -133,3 +133,41 @@ class CellPPE(ArchitectureHook):
         #     case 'cmpdi':  # Compare Double Word Immediate
 
         return super(CellPPE, self).get_instruction_low_level_il(data, addr, il)
+
+class PpcSceCallingConvention(CallingConvention):
+    name = "ppc-sce"
+
+    int_arg_regs = ["r3", "r4", "r5", "r6", "r7", "r8", "r9", "r10"]
+    int_return_reg = "r3"
+    high_int_return_reg = "r4"
+
+    float_arg_regs = ["f1", "f2", "f3", "f4", "f5", "f6", "f7", "f8", "f9", "f10", "f11", "f12", "f13"]
+    float_return_reg = "f1"
+
+    implicitly_defined_regs = ["r2", "r13"]
+    global_pointer_reg = "r2"
+
+    callee_saved_regs = [
+        "r14", "r15", "r16", "r17", "r18", "r19", "r20", "r21",
+        "r22", "r23", "r24", "r25", "r26", "r27", "r28", "r29",
+        "r30", "r31",
+        "f14", "f15", "f16", "f17", "f18", "f19", "f20", "f21",
+        "f22", "f23", "f24", "f25", "f26", "f27", "f28", "f29",
+        "f30", "f31",
+        "cr2", "cr3", "cr4",
+    ]
+
+    caller_saved_regs = [
+        "r0", "r2", "r3", "r4", "r5", "r6", "r7", "r8", "r9",
+        "r10", "r11", "r12",
+        "f0", "f1", "f2", "f3", "f4", "f5", "f6", "f7",
+        "f8", "f9", "f10", "f11", "f12", "f13",
+        "cr0", "cr1", "cr5", "cr6", "cr7",
+        "ctr", "lr",
+    ]
+
+    arg_regs_share_index = True
+    arg_regs_for_varargs = True
+    stack_reserved_for_arg_regs = True
+    stack_adjusted_on_return = False
+    eligible_for_heuristics = True
