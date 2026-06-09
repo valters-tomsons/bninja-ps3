@@ -219,6 +219,7 @@ class PS3View(BinaryView):
                     nid_table = stub["func_nidtable"]
                     addr_table = stub["func_table"]
 
+                    self.define_data_var(nid_table, Type.array(Type.int(4, sign=False), num_func), f"{libname}_nids_tbl")
                     self.define_data_var(addr_table, Type.array(Type.pointer_of_width(4, Type.function()), num_func), f"{libname}_func_tbl")
 
                     for j in range(num_func):
@@ -230,6 +231,8 @@ class PS3View(BinaryView):
                         if func_name is None:
                             log.log_warn(f"Missing nid: {libname}:{nid_hex}")
                             func_name = f"{libname}_{nid_hex}"
+                        else:
+                            self.set_comment_at(nid_table + (j * 4), func_name)
 
                         self.define_auto_symbol(Symbol(
                             SymbolType.ImportedFunctionSymbol,
