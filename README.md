@@ -1,4 +1,4 @@
-![](image.png)
+![](https://raw.githubusercontent.com/valters-tomsons/bninja-ps3/refs/heads/main/image.png)
 
 # bninja-ps3
 
